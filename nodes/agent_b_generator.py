@@ -1,12 +1,22 @@
-from state import main_state
-from langchain_openai import ChatOpenAI
-from skills import skill_generator
-class AgentBGenerator:
-    def __init__(self):
-        self.model_id = "/project/zz991000-zdeva/zz991012/my_workspace/models/Qwen2.5-32B-Instruct"
-        
-    def generate_node(state: main_state,self):
-        #ใช้ query, paras, suggested_answer เพื่อ generate answer
-        llm = ChatOpenAI(model=self.model_id, temperature=0.2)
-        prompt = f"{skill_generator}\n\nQuery: {state.query}\nParagraphs: {state.paras}\n\nSuggested Answer: {state.suggested_answer}"
-        return 0
+from typing import Dict, Any
+from .llm_clients import llm_client
+
+def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Agent B: Generator
+    รับ query + context + refs → สร้าง prompt → เรียก LLM → คืน abstractive summary
+    """
+    print("--- RUNNING AGENT B: GENERATOR ---")
+    query = state.get("query")
+    context = state.get("context")
+    feedback = state.get("feedback")
+    
+    # อ่าน Prompt skill_generator.md 
+    # สร้าง Payload ให้ LLM
+    
+    # Mock data for skeleton
+    abstractive = "สรุปคำตอบภาษาไทยทางการ"
+    
+    return {
+        "abstractive": abstractive
+    }
