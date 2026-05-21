@@ -1,5 +1,6 @@
 from state import main_state
 from skills import skill_validator_polish
+from langchain_openai import ChatOpenAI
 class AgentCValidator:
     def __init__(self, model_id="/project/zz991000-zdeva/zz991012/my_workspace/models/Qwen2.5-32B-Instruct"):
         self.model_id = model_id
