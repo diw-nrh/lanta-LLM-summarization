@@ -51,6 +51,7 @@ Analyze each paragraph individually. Does it answer the query? Does it contain t
 
 Format for individual analysis:
 - P{para_id}: "{Short text snippet}"
+  - Paragraph Type: (Resolution/Discussion/Announcement/Agenda/General)
   - Contains entity? (Yes/No/Partial)
   - Answers directly? (Yes/No/Implicit)
   - Contiguous with previous? (Yes/No/Unsure)
@@ -59,6 +60,7 @@ Format for individual analysis:
 
 Example:
 - P5: "The company purchases gasoline, diesel, and natural gas."
+  - Paragraph Type: General
   - Contains entity: Yes (fuel, purchase)
   - Answers directly: Yes (specifies the list clearly)
   - Contiguous: No (first paragraph of the topic)
@@ -203,6 +205,7 @@ Output ONLY the JSON object following the exact structure below. Do not include 
   "paragraph_decisions": [
     {
       "para_id": "P5",
+      "para_type": "General",
       "decision": "Yes",
       "score": 95,
       "reasoning": "Answers directly, specifies fuel types clearly.",
@@ -238,6 +241,7 @@ Output ONLY the JSON object following the exact structure below. Do not include 
 - The `thought_process` object must contain short summaries.
 - The `contiguous_blocks` array must be clearly defined.
 - The `paragraph_decisions` array must include EVERY paragraph provided in the window.
+- `para_type` MUST be classified for every paragraph (e.g., Resolution, Discussion, Announcement, Agenda, General).
 - The `selected_refs` array MUST ONLY contain paragraphs marked as "Yes" (Do not include "No" or "Maybe" paragraphs).
 - The `selected_context` string MUST ONLY contain the combined text from the `selected_refs`.
 - Allow a maximum of 2 Self-Corrections.
@@ -282,6 +286,7 @@ Action:
   "paragraph_decisions": [
     {
       "para_id": "P5",
+      "para_type": "General",
       "decision": "Yes",
       "score": 95,
       "reasoning": "Answers directly, specifies fuel types clearly.",
@@ -349,6 +354,7 @@ Action:
   "paragraph_decisions": [
     {
       "para_id": "P5",
+      "para_type": "Announcement",
       "decision": "Yes",
       "score": 100,
       "reasoning": "Answers directly and contains answer hint 'ห้อง N 404'.",
@@ -408,6 +414,7 @@ Action:
   "paragraph_decisions": [
     {
       "para_id": "P28",
+      "para_type": "Discussion",
       "decision": "Maybe",
       "score": 55,
       "reasoning": "Provides backward context about committee discussion.",
