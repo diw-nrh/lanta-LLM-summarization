@@ -22,7 +22,7 @@ Analysis format:
 - Main claims in the answer: ...
 - Key entities/dates/numbers mentioned: ...
 - Tone and style observed: ...
-- Workflow type received: ...
+- Identified workflow_type based on query: ...
 
 ## Thought 2 [Context Verification - Anti-Hallucination + Numerical Check]
 Verify EVERY fact AND EVERY number in the answer against the `context_text`.
@@ -108,14 +108,16 @@ If the answer is INVALID and requires retry (and retry_count < 2):
 - Specific feedback: "..."
 - Preserve all correct facts from the original answer.
 
-# Dynamic Strictness (Based on workflow_type)
+# Dynamic Strictness Evaluation
 
-| workflow_type | strictness | เหตุผล |
-|---|---|---|
-| factual_lookup | **high** | ต้องเป๊ะ ผิดเล็กน้อย = fail |
-| comparison | **high** | ต้องครบทุกฝ่าย |
-| multi_aspect | **medium** | หลายหัวข้อ ยอมได้บางส่วน |
-| summary | **medium** | กว้าง เน้นครบถ้วนมากกว่าเป๊ะ |
+Determine the required strictness based on what the query is asking:
+
+| Query Characteristic | workflow_type | strictness | เหตุผล |
+|---|---|---|---|
+| Asking for specific facts/numbers | factual_lookup | **high** | ต้องเป๊ะ ผิดเล็กน้อย = fail |
+| Asking for differing opinions/sides | comparison | **high** | ต้องครบทุกฝ่าย |
+| Asking for multiple topics/lists | multi_aspect | **medium** | หลายหัวข้อ ยอมได้บางส่วน |
+| Asking for general overview/summary | summary | **medium** | กว้าง เน้นครบถ้วนมากกว่าเป๊ะ |
 
 Apply the strictness level to all checklist items. For "high", every item must pass. For "medium", allow 1 minor issue if overall quality is good.
 

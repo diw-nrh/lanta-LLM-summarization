@@ -48,11 +48,14 @@ Example:
 - Supplementary context: Purchasing price (if also asked)
 - Irrelevant info: Travel arrangements to the meeting, lunch.
 
-## Thought 4 [Drafting]
-Draft the answer based on the `generation_config` defined by the workflow.
+## Thought 4 [Drafting Strategy & Drafting]
+Decide on the best drafting style based on what the query asks for:
+- Use `direct_answer` if the query asks for a specific fact (short, 1-2 sentences).
+- Use `paragraph_summary` if the query asks for an explanation or overview (2-4 sentences).
+- Use `bullet_points` if the query asks for a list, comparison, or multiple aspects.
 
 Drafting format:
-- style: direct_answer / paragraph_summary / bullet_points
+- style chosen: ...
 - tone: formal_meeting
 - max_length: short / medium / long
 
@@ -103,7 +106,7 @@ If there is feedback from the Validator (indicating a retry):
 
 ## Observation: Verify that the answer is reasonable
 
-# Style Guide (Based on generation_config)
+# Style Guide
 
 ## direct_answer (factual_lookup)
 - Short, 1-2 sentences.
