@@ -6,10 +6,16 @@ def route_validator(state: GraphState):
     """
     ฟังก์ชันกำหนดเส้นทางตามผลของ Validator
     """
-    if state["is_valid"]:
+    if state.get("is_valid"):
+        return "formatter"
+        
+    # ป้องกัน Infinite Loop (ถ้า Retry เต็ม 3 รอบแล้ว ให้บังคับไป formatter เลย)
+    # เราตั้งเป็น >= 3 เพื่อให้รอบที่ 3 (retry_count=2) ได้วิ่งกลับไปหา Agent A (Brute Force Mode)
+    if state.get("retry_count", 0) >= 3:
+        print("[WARN] MAX RETRIES REACHED. Forcing route to formatter.")
         return "formatter"
     
-    # ถ้าไม่ผ่าน ให้ดูว่าจะ route ไปไหน
+    # ถ้าไม่ผ่าน และยังไม่เกินโควต้า ให้ดูว่าจะ route ไปไหน
     route = state.get("route_to", "none")
     if route == "retriever":
         return "agent_a"

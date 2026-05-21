@@ -8,10 +8,11 @@ def formatter_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     print("--- RUNNING FORMATTER ---")
     query_id = state.get("query_id")
-    abstractive = state.get("abstractive")
+    abstractive = state.get("abstractive", "")
     refs = state.get("refs", [])
     
-    refs_str = ",".join(refs)
+    # กฎของ Refs: หลายอันให้คั่นด้วย comma ไม่มี space (เช่น P4,P3,P1)
+    refs_str = ",".join(refs) if refs else ""
     
     new_row = {
         "ID": query_id,
@@ -21,14 +22,20 @@ def formatter_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     csv_path = "submission.csv"
     
-    if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path)
-        # Append or Update
-        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-    else:
-        df = pd.DataFrame([new_row])
-        
-    df.to_csv(csv_path, index=False)
-    print(f"Saved to {csv_path}")
+    try:
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            # ถ้ามี ID นี้อยู่แล้ว ให้อัปเดตข้อมูลแทนการต่อท้าย
+            if query_id in df['ID'].values:
+                df.loc[df['ID'] == query_id, ['abstractive', 'refs']] = [abstractive, refs_str]
+            else:
+                df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+        else:
+            df = pd.DataFrame([new_row])
+            
+        df.to_csv(csv_path, index=False, encoding='utf-8')
+        print(f"[SUCCESS] Saved {query_id} to {csv_path} | Refs: {refs_str}")
+    except Exception as e:
+        print(f"[ERROR] Failed to save CSV: {e}")
     
     return state
