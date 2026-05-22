@@ -1,9 +1,3 @@
-# PyTorch with CUDA 11.8 support
---extra-index-url https://download.pytorch.org/whl/cu118
-torch==2.1.0+cu118
-torchaudio==2.1.0+cu118
-torchvision==0.16.0+cu118
-
 # Large Language Model & HuggingFace
 transformers==4.36.2
 accelerate==0.25.0
@@ -12,8 +6,8 @@ pydantic-core==2.14.1
 
 # LangGraph - Workflow orchestration
 langgraph==0.0.32
-langchain==0.1.4
-langchain-community==0.0.14
+langchain==0.1.16
+langchain-community==0.0.34
 
 # Embeddings & Retrieval
 sentence-transformers==2.2.2
