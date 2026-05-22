@@ -7,14 +7,10 @@ from .llm_clients import llm_client
 # Pydantic Schemas for LLM Structured Output (Agent B)
 # -------------------------------------------------------------------
 class GeneratorThoughtProcess(BaseModel):
-    context_analysis: str = Field(description="Analyze the provided context")
-    query_alignment: str = Field(description="Check if context can answer the query")
-    key_extraction: str = Field(description="Extract key information")
-    drafting_strategy: str = Field(description="Decide on style: direct_answer, paragraph_summary, or bullet_points")
-    draft_content: str = Field(description="Initial draft")
-    self_correction_1: str = Field(description="First round of self-correction")
-    final_polish: str = Field(description="Polishing for formal Thai language")
-    language_check: str = Field(description="Ensure 100% Thai without English unless necessary")
+    analysis: str = Field(description="Analyze the query and context")
+    draft_content: str = Field(description="Initial detailed answer based on context")
+    self_correction: str = Field(description="Check for hallucinations and completeness")
+    final_polish: str = Field(description="Ensure tone is formal and correct")
 
 class GeneratorOutput(BaseModel):
     thought_process: GeneratorThoughtProcess
@@ -30,6 +26,13 @@ def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     context = state.get("context", "")
     feedback = state.get("feedback", "")
     
+    if context == "ไม่พบคำตอบ":
+        print("[INFO] Context is 'ไม่พบคำตอบ'. Short-circuiting Generator.")
+        return {
+            "abstractive_drafts": ["ไม่พบคำตอบ"],
+            "abstractive": "ไม่พบคำตอบ"
+        }
+
     skill_file_path = os.path.join("skills", "skill_generator.md")
     system_instruction = ""
     try:

@@ -7,11 +7,8 @@ from .llm_clients import llm_client
 # Pydantic Schemas for LLM Structured Output (Agent C)
 # -------------------------------------------------------------------
 class ValidatorThoughtProcess(BaseModel):
-    draft_evaluation: str = Field(description="Evaluate all provided drafts against the context")
-    best_draft_selection: str = Field(description="Select the best draft and explain why")
-    context_verification: str = Field(description="Verify facts and numbers against context")
-    query_alignment: str = Field(description="Check if answer aligns with query")
-    language_check: str = Field(description="Check for 100% Thai and formal tone")
+    evaluation: str = Field(description="Evaluate drafts for truthfulness and completeness")
+    fact_check: str = Field(description="Verify all facts against the context")
     routing_decision: str = Field(description="Decide if it passes or needs routing")
 
 class ValidatorOutput(BaseModel):
@@ -31,6 +28,16 @@ def validator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     abstractive = state.get("abstractive", "")
     context = state.get("context", "")
     retry_count = state.get("retry_count", 0)
+    
+    if abstractive == "ไม่พบคำตอบ":
+        print("[INFO] Abstractive is 'ไม่พบคำตอบ'. Short-circuiting Validator.")
+        return {
+            "is_valid": True,
+            "route_to": "none",
+            "feedback": "",
+            "abstractive": "ไม่พบคำตอบ",
+            "retry_count": retry_count
+        }
     
     drafts_str = "\n".join([f"Draft {i+1}:\n{d}" for i, d in enumerate(drafts)]) if drafts else abstractive
     

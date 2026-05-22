@@ -246,9 +246,15 @@ Give your reasoning and then the best_group_id."""
         print(f"  [Expanded]: {all_para_ids[expand_min]}–{all_para_ids[expand_max]} ({expand_max - expand_min + 1} paragraphs)")
         
     else:
-        # 🔴 BRUTE FORCE (Panic Mode)
-        print(f"[INFO] Round {retry_count + 1} - BRUTE FORCE Mode! Reading entire document.")
-        context_text_for_llm = "\n".join([f"[{p_id}]: {text}" for p_id, text in doc_texts.items()])
+        # 🔴 ABORT INSTEAD OF BRUTE FORCE
+        print(f"[INFO] Round {retry_count + 1} - Max retries reached. Aborting search.")
+        return {
+            "query": query,
+            "context": "ไม่พบคำตอบ",
+            "feedback": "Max retries reached. No answer found.",
+            "retry_count": retry_count,
+            "refs": []
+        }
     
     # ==============================================
     # STAGE 5: LLM Pass 2 — กรองเอาแค่เนื้อที่ต้องใช้สรุป
