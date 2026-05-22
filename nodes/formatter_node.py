@@ -20,10 +20,10 @@ def formatter_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "refs": refs_str
     }
     
-    csv_path = "submission.csv"
+    csv_path = r"C:\Users\asus\Desktop\allproject\GitHub\lanta-LLM-summarization\submission.csv"
     
     try:
-        if os.path.exists(csv_path):
+        if os.path.exists(csv_path) and os.path.getsize(csv_path) > 0:
             df = pd.read_csv(csv_path)
             # ถ้ามี ID นี้อยู่แล้ว ให้อัปเดตข้อมูลแทนการต่อท้าย
             if query_id in df['ID'].values:

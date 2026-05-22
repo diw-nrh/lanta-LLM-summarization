@@ -153,22 +153,40 @@ YOUR CURRENT TASK: Analyze this query and provide weights.
                 
                 scores[p_id] = float(final_score)
                 
-        # เลือก Top 15 Paragraphs เฉพาะในเอกสารนี้
-        top_k = 15
+        if not scores:
+            print("[WARN] No embeddings or BM25 found. Falling back to basic word overlap search for testing.")
+            query_words = set(str(query).split())
+            for p_id in all_para_ids:
+                text_words = set(str(doc_texts[p_id]).split())
+                overlap = len(query_words & text_words)
+                scores[p_id] = overlap
+                
+        # เลือก Top 5 Paragraphs เพื่อเน้นเฉพาะอันที่ตรงที่สุด (ลด Noise จากอันที่คะแนนต่ำกว่า)
+        top_k = 5
         sorted_paras = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
         
-        paragraphs_to_read = []
+        # 1. รวบรวม index ของ paragraphs ที่ติด Top 5 และดึงเพื่อนบ้าน (Context Expansion)
+        selected_indices = set()
         for p_id, score in sorted_paras:
             try:
                 idx = all_para_ids.index(p_id)
-                prev_text = str(doc_texts[all_para_ids[idx-1]]) + " " if idx > 0 else ""
-                curr_text = str(doc_texts[p_id])
-                next_text = " " + str(doc_texts[all_para_ids[idx+1]]) if idx < len(all_para_ids) - 1 else ""
-                window_text = prev_text + curr_text + next_text
+                selected_indices.add(idx)
+                # ดึงก่อนหน้า 1 อัน (เพื่อเอา Header) และดึงไปข้างหน้า 2 อัน (เผื่อเนื้อหายาวนิดหน่อย)
+                if idx > 0: selected_indices.add(idx - 1)
+                if idx < len(all_para_ids) - 1: selected_indices.add(idx + 1)
+                if idx < len(all_para_ids) - 2: selected_indices.add(idx + 2)
             except ValueError:
-                window_text = str(doc_texts.get(p_id, ""))
+                pass
                 
-            paragraphs_to_read.append(f"[{p_id}]: {window_text.strip()}")
+        # 2. เรียงลำดับตามเนื้อหาต้นฉบับ (Chronological Order) ไม่ใช่เรียงตามคะแนน
+        sorted_indices = sorted(list(selected_indices))
+        
+        # 3. สร้างข้อความให้ LLM อ่านแบบต่อเนื่องเหมือนอ่านเอกสารจริง
+        paragraphs_to_read = []
+        for idx in sorted_indices:
+            p_id = all_para_ids[idx]
+            raw_text = str(doc_texts.get(p_id, ""))
+            paragraphs_to_read.append(f"[{p_id}]: {raw_text.strip()}")
             
         context_text_for_llm = "\n".join(paragraphs_to_read)
         
