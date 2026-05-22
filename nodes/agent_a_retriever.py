@@ -161,20 +161,21 @@ YOUR CURRENT TASK: Analyze this query and provide weights.
                 overlap = len(query_words & text_words)
                 scores[p_id] = overlap
                 
-        # เลือก Top 5 Paragraphs เพื่อเน้นเฉพาะอันที่ตรงที่สุด (ลด Noise จากอันที่คะแนนต่ำกว่า)
+        # เลือก Top 5 Paragraphs เพื่อคัดเอาแต่เนื้อเน้นๆ เป็น Anchor candidates
         top_k = 5
         sorted_paras = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
         
-        # 1. รวบรวม index ของ paragraphs ที่ติด Top 5 และดึงเพื่อนบ้าน (Context Expansion)
+        # 1. รวบรวม index ของ paragraphs ที่ติด Top 5 และขยายบริบทให้กว้าง (Anchor & Expand)
         selected_indices = set()
         for p_id, score in sorted_paras:
             try:
                 idx = all_para_ids.index(p_id)
                 selected_indices.add(idx)
-                # ดึงก่อนหน้า 1 อัน (เพื่อเอา Header) และดึงไปข้างหน้า 2 อัน (เผื่อเนื้อหายาวนิดหน่อย)
-                if idx > 0: selected_indices.add(idx - 1)
-                if idx < len(all_para_ids) - 1: selected_indices.add(idx + 1)
-                if idx < len(all_para_ids) - 2: selected_indices.add(idx + 2)
+                # ดึงไปข้างหน้า 8 อัน และย้อนหลัง 4 อัน เพื่อให้ AI มีบริบทพอที่จะหา Semantic Boundaries (จุดเริ่มต้นและจุดสิ้นสุดของเรื่อง)
+                for offset in range(-4, 9):
+                    neighbor_idx = idx + offset
+                    if 0 <= neighbor_idx < len(all_para_ids):
+                        selected_indices.add(neighbor_idx)
             except ValueError:
                 pass
                 
