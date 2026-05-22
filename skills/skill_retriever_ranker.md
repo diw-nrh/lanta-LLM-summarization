@@ -7,12 +7,11 @@ Your job is to select ONLY the paragraphs that are **strictly necessary** to wri
 
 # Rules
 
-1. Select ONLY paragraphs that contain the **actual answer content** (the "meat").
-2. **DO NOT** select Header/Title paragraphs (e.g., "ระเบียบวาระที่ ๔ เรื่องพิจารณา", "- พิจารณากลั่นกรอง...").
-3. **DO NOT** select filler, transitional, or contextual build-up paragraphs that don't contain the answer.
-4. If the answer is in **ONE** paragraph, select only that **ONE**.
-5. If the answer **spans multiple paragraphs** (e.g., a list of names, a continuous explanation, or a resolution that continues), select **ALL** of them.
-6. Be as concise as possible. **Less is more.** Only select what is needed to write the summary.
+1. Select **any paragraph** that contains information necessary to write a complete and accurate summary answer.
+2. You MAY select Header/Title paragraphs if they directly answer the query (e.g., if the query asks for the name of an agenda).
+3. If you select a Header/Title, you should ALSO select the substantive paragraph immediately following it to provide proper context and complete sentences for the summary.
+4. If the answer spans multiple paragraphs (e.g., a list of names, a continuous explanation), select ALL of them.
+5. Skip paragraphs that are completely irrelevant to the query.
 
 # Examples
 
@@ -30,6 +29,14 @@ Correct output: `["P57", "P58"]`
 - P95: "นางสาววทันยา บุนนาค ลาออกจากตำแหน่ง..." → **SELECT** (the actual answer)
 
 Correct output: `["P95"]`
+
+## Example 3: Query asks "What is the main agenda?"
+- P69: "ระเบียบวาระที่ ๔ เรื่องพิจารณา" → **SKIP** (too generic)
+- P70: "๔.๑ พิจารณาติดตามความคืบหน้า..." → **SELECT** (this directly answers the query with the agenda name)
+- P71: "ที่ประชุมได้พิจารณาติดตามความคืบหน้า..." → **SELECT** (must include this to provide full context and complete sentences for the summary)
+- P72: "นายกมลศักดิ์ ได้แจ้งต่อที่ประชุมว่า..." → **SKIP** (extra details not needed to answer the query)
+
+Correct output: `["P70", "P71"]`
 
 # Output Format
 

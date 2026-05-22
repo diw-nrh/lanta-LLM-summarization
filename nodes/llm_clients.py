@@ -12,7 +12,7 @@ class LLMClient:
                 api_key="sk_r8iPD9QTonepwvFVEmqTaH4gL8PQVX6UGSGyGhh1-WI", # อย่าลืมเปลี่ยนเป็น API Key จริงของคุณ
                 base_url="https://api.novita.ai/openai"
             )
-            self.model_name = "deepseek/deepseek-v3.2"
+            self.model_name = "qwen/qwen2.5-7b-instruct"
             print(f"--- 🚀 Novita API Client Initialized ({self.model_name})! ---")
         except Exception as e:
             raise RuntimeError(f"Failed to initialize OpenAI Client: {e}. Please run: pip install openai")
@@ -26,7 +26,7 @@ class LLMClient:
                     {"role": "system", "content": "You are a helpful assistant."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=8192,
+                max_tokens=8000,
                 temperature=0.7
             )
             return response.choices[0].message.content.strip()
@@ -60,7 +60,7 @@ JSON Schema:
                     {"role": "system", "content": "You are a helpful assistant that always responds with valid JSON."},
                     {"role": "user", "content": full_prompt}
                 ],
-                max_tokens=8192,
+                max_tokens=2048,
                 temperature=0.1
             )
             response_text = response.choices[0].message.content.strip()

@@ -6,6 +6,8 @@ from .document_store import document_store
 from .embedder import embedder
 from .llm_clients import llm_client
 
+import concurrent.futures
+
 try:
     from rank_bm25 import BM25Okapi
     HAS_BM25 = True
@@ -16,10 +18,16 @@ except ImportError:
 # -------------------------------------------------------------------
 # Pydantic Schemas
 # -------------------------------------------------------------------
-# --- LLM Pass 1: เลือกก้อนที่ดีที่สุด ---
+# --- LLM Pass 1: ให้คะแนนและประเมินแต่ละก้อน (Scoring) ---
+class GroupEvaluation(BaseModel):
+    reasoning: str = Field(description="Analysis of how well this group answers the query")
+    score: int = Field(description="Score from 1 to 10. 10 = perfectly contains the exact answer, 1 = irrelevant or just headers")
+
+# --- LLM Pass 1.5: เลือกก้อนที่ดีที่สุดจาก Top 3 ---
 class AnchorSelection(BaseModel):
-    reasoning: str = Field(description="Analysis of which group best answers the query")
+    reasoning: str = Field(description="Analysis of which group best answers the query among the top choices")
     best_group_id: int = Field(description="The 1-indexed ID of the best group")
+
 
 # --- LLM Pass 2: กรองเอาแค่เนื้อที่ต้องใช้สรุป ---
 class FinalFilterOutput(BaseModel):
@@ -88,10 +96,13 @@ def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 text_words = set(str(doc_texts[p_id]).split())
                 scores[p_id] = len(query_words & text_words)
         
-        # --- Top 5 ---
-        top_k = 5
+        # --- Top K ---
+        # เพิ่ม Top-K จาก 5 เป็น 15 เพื่อแก้ปัญหา "ตัวหลอก" (Distractor) 
+        # เช่น คำถามมีคำว่า "ครั้งที่ 31" ทำให้ Header (P1-P5) ได้คะแนนนำ 
+        # การดึงเผื่อไว้ 15 อัน จะช่วยให้เนื้อหาจริงๆ (เช่น P71) ติดร่างแหมาด้วย
+        top_k = 15
         sorted_paras = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-        print(f"  [bge-m3+BM25 Top5]: {[f'{p}({s:.3f})' for p, s in sorted_paras]}")
+        print(f"  [bge-m3+BM25 Top{top_k}]: {[f'{p}({s:.3f})' for p, s in sorted_paras]}")
         
         # ==============================================
         # STAGE 2: จัดกลุ่ม Top 5 เป็น Clusters
@@ -141,41 +152,79 @@ def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
             print(f"    Group {g_idx + 1}: {all_para_ids[min_idx]}–{all_para_ids[max_idx]} (anchors: {anchors})")
         
         # ==============================================
-        # STAGE 3: LLM Pass 1 — เลือกก้อนที่ดีที่สุด
+        # STAGE 3: LLM Pass 1 — ประเมินและให้คะแนนทีละก้อน (Concurrent)
         # ==============================================
         if len(groups) == 1:
             best_group_idx = 0
-            print(f"[INFO] Stage 2: Only 1 cluster → skip anchor LLM call")
+            print(f"[INFO] Stage 2: Only 1 cluster → skip anchor scoring")
         else:
-            print(f"[INFO] Stage 2: LLM Anchor Selection ({len(groups)} clusters)")
+            print(f"[INFO] Stage 2: Concurrent Scoring ({len(groups)} clusters)")
             
-            groups_display = ""
-            for g_idx, g_text in enumerate(group_texts):
-                groups_display += f"\n=== GROUP {g_idx + 1} ===\n{g_text}\n"
-            
-            anchor_prompt = f"""You are an expert document analyst for Thai parliamentary meeting records.
-You will receive a query and multiple GROUPS of paragraphs.
-Your task: identify which GROUP contains the paragraphs that BEST and MOST DIRECTLY answer the query.
-
-IMPORTANT:
-- Focus on WHERE the actual answer content is, not just keyword matches.
-- If the query asks about a specific agenda item (ระเบียบวาระที่ X), find the group that contains the discussion/content of that specific agenda item.
-
+            def evaluate_group(g_idx: int, g_text: str):
+                prompt = f"""You are a strict document evaluator for Thai parliamentary meeting records.
 [Query]: {query}
-{groups_display}
-Which group number (1 to {len(groups)}) best answers the query?"""
+
+[Context Group {g_idx + 1}]:
+{g_text}
+
+Evaluate how well this exact group of paragraphs answers the query.
+Be extremely strict. If this group only contains the agenda title (e.g. "ระเบียบวาระที่ X") but DOES NOT contain the actual substance or answer, score it VERY LOW (1-3).
+If it contains the actual substantive answer, score it HIGH (8-10).
+
+Give your reasoning and then a final score from 1 to 10."""
+                
+                try:
+                    result = llm_client.generate_structured(prompt, GroupEvaluation)
+                    return (g_idx, result.score, result.reasoning)
+                except Exception as e:
+                    return (g_idx, 0, f"Error: {e}")
             
-            try:
-                anchor_result = llm_client.generate_structured(anchor_prompt, AnchorSelection)
-                if anchor_result:
-                    best_group_idx = max(0, min(anchor_result.best_group_id - 1, len(groups) - 1))
-                    print(f"  [Selected]: Group {best_group_idx + 1} (reason: {anchor_result.reasoning[:80]}...)")
-                else:
-                    best_group_idx = 0
-                    print("[WARN] Anchor selection returned None, using group 1")
-            except Exception as e:
-                print(f"[WARN] Anchor selection failed: {e}, using group 1")
-                best_group_idx = 0
+            eval_results = []
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(groups))) as executor:
+                futures = [executor.submit(evaluate_group, i, group_texts[i]) for i in range(len(groups))]
+                for future in concurrent.futures.as_completed(futures):
+                    eval_results.append(future.result())
+            
+            # เรียงลำดับตามคะแนน (มากไปน้อย)
+            eval_results.sort(key=lambda x: x[1], reverse=True)
+            
+            for r in eval_results:
+                print(f"  [Group {r[0] + 1} Score]: {r[1]}/10 (Reason: {r[2][:80]}...)")
+            
+            # --- นำ Top 3 มาเลือกอีกทีว่าอันไหนตรงสุด ---
+            top_3 = eval_results[:3]
+            if len(top_3) == 1:
+                best_group_idx = top_3[0][0]
+            else:
+                print(f"[INFO] Stage 2.5: Final Selection from Top {len(top_3)} groups")
+                groups_display = ""
+                # แสดงแค่กลุ่มที่ติด Top 3
+                for r in top_3:
+                    g_idx = r[0]
+                    groups_display += f"\n=== GROUP {g_idx + 1} ===\n{group_texts[g_idx]}\n"
+                
+                anchor_prompt = f"""You are an expert document analyst for Thai parliamentary meeting records.
+[Query]: {query}
+
+Here are the Top {len(top_3)} candidate groups of paragraphs:
+{groups_display}
+
+Which group number best and most directly answers the query?
+Select the exact group number (e.g. if you select 'GROUP 4', output 4).
+Give your reasoning and then the best_group_id."""
+                try:
+                    anchor_result = llm_client.generate_structured(anchor_prompt, AnchorSelection)
+                    if anchor_result:
+                        best_group_idx = max(0, min(anchor_result.best_group_id - 1, len(groups) - 1))
+                        # เช็คเพื่อป้องกัน LLM คืนค่ากลุ่มที่ไม่ได้อยู่ใน Top 3
+                        if not any(r[0] == best_group_idx for r in top_3):
+                            best_group_idx = top_3[0][0]
+                        print(f"  [Selected]: Group {best_group_idx + 1} (reason: {anchor_result.reasoning[:80]}...)")
+                    else:
+                        best_group_idx = top_3[0][0]
+                except Exception as e:
+                    print(f"[WARN] Final selection failed: {e}")
+                    best_group_idx = top_3[0][0]
         
         # ==============================================
         # STAGE 4: ขยายก้อนที่ชนะให้ครบเนื้อหา (-4 / +8)

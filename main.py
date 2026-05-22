@@ -61,7 +61,7 @@ def main():
         print(f"[ERROR] Dataset not found: {json_path}")
         return
 
-    first_doc_id = "doc_001"
+    first_doc_id = "doc_002"
     initialize_system(json_path, target_doc_id=first_doc_id)
     
     print("\n--- STARTING LANGGRAPH PIPELINE ---")
@@ -70,7 +70,7 @@ def main():
         dataset = json.load(f)
         
     # ดึงเฉพาะคำถามที่เป็นของ doc_001 (Doc แรกสุด)
-    first_doc_id = "doc_001"
+    first_doc_id = "doc_002"
     queries = [q for q in dataset.get("queries", []) if q.get("doc_id") == first_doc_id]
     
     if args.limit > 0:
