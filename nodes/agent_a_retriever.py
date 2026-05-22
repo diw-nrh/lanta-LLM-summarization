@@ -14,59 +14,28 @@ except ImportError:
     print("[WARN] rank_bm25 not installed. Hybrid Search disabled. Run 'pip install rank_bm25'")
 
 # -------------------------------------------------------------------
-# Pydantic Schemas for LLM Structured Output
+# Pydantic Schemas
 # -------------------------------------------------------------------
-# --- STAGE 0 Schema ---
-class EnsembleWeights(BaseModel):
-    e5_large_weight: float = Field(description="Weight for e5-large model (0.0 to 1.0)")
-    bge_m3_weight: float = Field(description="Weight for bge-m3 model (0.0 to 1.0)")
-    wangchanberta_weight: float = Field(description="Weight for WangchanBERTa model (0.0 to 1.0)")
+# --- LLM Pass 1: เลือกก้อนที่ดีที่สุด ---
+class AnchorSelection(BaseModel):
+    reasoning: str = Field(description="Analysis of which group best answers the query")
+    best_group_id: int = Field(description="The 1-indexed ID of the best group")
 
-class EnsembleOutput(BaseModel):
-    thought_process: str = Field(description="Analysis of the query and justification for weights")
-    weights: EnsembleWeights
-
-# --- STAGE 2 Schema ---
-class ThoughtProcess(BaseModel):
-    query_analysis: str = Field(description="Analyze the query")
-    context_understanding: str = Field(description="Analyze the context window")
-    key_findings: str = Field(description="Key findings from paragraphs")
-    self_correction: str = Field(description="Self correction notes")
-    final_reasoning: str = Field(description="Final reasoning for selection")
-
-class ParagraphDecision(BaseModel):
-    para_id: str = Field(description="ID of the paragraph")
-    para_type: str = Field(description="Type: Resolution/Discussion/Announcement/Agenda/General")
-    contains_entity: str = Field(description="Yes/No/Partial")
-    answers_directly: str = Field(description="Yes/No/Implicit")
-    is_contiguous: str = Field(description="Yes/No")
-    score: int = Field(description="Score 0-100")
-    decision: str = Field(description="Yes/Maybe/No")
-
-class ContiguousBlock(BaseModel):
-    block_id: str = Field(description="ID of the block")
-    para_ids: List[str] = Field(description="List of para_ids in this block")
-    is_valid: bool = Field(description="Is this a valid contiguous block?")
-
-class RankerOutput(BaseModel):
-    thought_process: ThoughtProcess
-    paragraph_decisions: List[ParagraphDecision]
-    contiguous_blocks: List[ContiguousBlock]
-    selected_refs: List[str] = Field(description="List of para_ids that scored Yes")
+# --- LLM Pass 2: กรองเอาแค่เนื้อที่ต้องใช้สรุป ---
+class FinalFilterOutput(BaseModel):
+    reasoning: str = Field(description="Why these paragraphs were selected for the summary")
+    selected_refs: List[str] = Field(description="Final list of para_ids needed to answer the query")
     selected_context: str = Field(description="Combined text of selected paragraphs")
 
 # -------------------------------------------------------------------
 # LangGraph Node
 # -------------------------------------------------------------------
 def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
-    print("--- RUNNING AGENT A: RETRIEVER (WITH ENSEMBLE) ---")
+    print("--- RUNNING AGENT A: RETRIEVER (2-Pass) ---")
     query = state.get("query", "")
     doc_id = state.get("doc_id", "")
     feedback = state.get("feedback", "")
     retry_count = state.get("retry_count", 0)
-    
-    context_text_for_llm = ""
-    all_para_ids = []
     
     # ดึงข้อมูลทั้งหมดใน doc_id ออกมาก่อน
     doc_texts = document_store.get_paragraphs(doc_id)
@@ -76,162 +45,175 @@ def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
         
     all_para_ids = list(doc_texts.keys())
     
+    context_text_for_llm = ""
+    
     # ====================================================
-    # SMART FALLBACK & ENSEMBLE LOGIC
+    # NORMAL MODE (retry < 2)
     # ====================================================
     if retry_count < 2:
-        # 🟢 STAGE 0: ENSEMBLE ANALYZER (LLM Call 1)
-        print(f"[INFO] Round {retry_count + 1} - Stage 0: Ensemble Analyzer running...")
         
-        ensemble_skill_path = os.path.join("skills", "skill_ensemble.md")
-        ensemble_instruction = ""
-        try:
-            with open(ensemble_skill_path, "r", encoding="utf-8") as f:
-                ensemble_instruction = f.read()
-        except Exception:
-            ensemble_instruction = "You are an Ensemble Engineer."
-            
-        ensemble_prompt = f"""{ensemble_instruction}
-        
-==================================================
-YOUR CURRENT TASK: Analyze this query and provide weights.
-[Query]: {query}
-==================================================
-"""
-        # Default weights in case LLM fails
-        w_e5, w_bge, w_wangchan = 0.33, 0.34, 0.33
-        
-        try:
-            ensemble_out = llm_client.generate_structured(ensemble_prompt, EnsembleOutput)
-            if ensemble_out:
-                w_e5 = ensemble_out.weights.e5_large_weight
-                w_bge = ensemble_out.weights.bge_m3_weight
-                w_wangchan = ensemble_out.weights.wangchanberta_weight
-                print(f"[INFO] Ensemble Weights -> e5: {w_e5:.2f}, bge: {w_bge:.2f}, wangchan: {w_wangchan:.2f}")
-        except Exception as e:
-            print(f"[WARN] Ensemble Analyzer failed, using defaults. Error: {e}")
-
-        # 🟢 STAGE 1: HYBRID SEARCH (Vector + BM25)
-        print(f"[INFO] Stage 1: Hybrid Search Mode activated.")
+        # ==============================================
+        # STAGE 1: Hybrid Search (bge-m3 + BM25)
+        # ==============================================
+        print(f"[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)")
         
         query_vecs = embedder.encode_query(query)
         doc_embeddings = document_store.get_embeddings(doc_id)
-        
-        # สมมติว่าในอนาคต embedder.py ส่งกลับมา 3 โมเดล 
-        q_vec_bge = query_vecs.get("bge-m3")
-        q_vec_e5 = query_vecs.get("e5-large", q_vec_bge) 
-        q_vec_wangchan = query_vecs.get("wangchanberta", q_vec_bge)
+        q_vec = query_vecs.get("bge-m3")
         
         # --- BM25 Setup ---
         bm25_scores = {}
         if HAS_BM25 and all_para_ids:
-            # ใช้ str() คลุมป้องกันบั๊ก TypeError หากบางย่อหน้าใน JSON ถูกแปลงเป็นตัวเลข
             tokenized_corpus = [str(doc_texts[p]).split(" ") for p in all_para_ids]
             bm25 = BM25Okapi(tokenized_corpus)
             tokenized_query = str(query).split(" ")
             raw_bm25_scores = bm25.get_scores(tokenized_query)
-            
-            # Normalize BM25 scores (Min-Max to 0-1)
-            # แก้ไขจาก .size เป็น len() ป้องกันบั๊กกรณี rank_bm25 คืนค่าเป็น Python List ปกติ
             max_bm25 = max(raw_bm25_scores) if len(raw_bm25_scores) > 0 and max(raw_bm25_scores) > 0 else 1
             for idx, p_id in enumerate(all_para_ids):
                 bm25_scores[p_id] = raw_bm25_scores[idx] / max_bm25
-                
+        
+        # --- Scoring: bge-m3 (70%) + BM25 (30%) ---
         scores = {}
-        # เก็บคะแนนแยกแต่ละ model เพื่อ debug
-        scores_e5 = {}
-        scores_bge = {}
-        scores_wangchan = {}
-        
-        if doc_embeddings:
+        if doc_embeddings and q_vec is not None:
             for p_id, p_vecs in doc_embeddings.items():
-                score_bge = float(np.dot(q_vec_bge, p_vecs)) if q_vec_bge is not None else 0
-                score_e5 = float(np.dot(q_vec_e5, p_vecs)) if q_vec_e5 is not None else 0
-                score_wangchan = float(np.dot(q_vec_wangchan, p_vecs)) if q_vec_wangchan is not None else 0
-                
-                scores_e5[p_id] = score_e5
-                scores_bge[p_id] = score_bge
-                scores_wangchan[p_id] = score_wangchan
-                
-                vector_score = (score_e5 * w_e5) + (score_bge * w_bge) + (score_wangchan * w_wangchan)
-                
-                # Hybrid Fusion
+                vec_score = float(np.dot(q_vec, p_vecs))
                 bm25_score = bm25_scores.get(p_id, 0.0)
-                # Weight: 70% Vector, 30% BM25
-                final_score = (vector_score * 0.7) + (bm25_score * 0.3)
-                
-                scores[p_id] = float(final_score)
+                final_score = (vec_score * 0.7) + (bm25_score * 0.3)
+                scores[p_id] = final_score
         
-        # --- LOG: แสดง Top 5 ของแต่ละ model ---
-        top5_e5 = sorted(scores_e5.items(), key=lambda x: x[1], reverse=True)[:5]
-        top5_bge = sorted(scores_bge.items(), key=lambda x: x[1], reverse=True)[:5]
-        top5_wangchan = sorted(scores_wangchan.items(), key=lambda x: x[1], reverse=True)[:5]
-        top5_bm25 = sorted(bm25_scores.items(), key=lambda x: x[1], reverse=True)[:5]
-        top5_final = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:5]
-        
-        print(f"  [e5-large   Top5]: {[f'{p}({s:.3f})' for p, s in top5_e5]}")
-        print(f"  [bge-m3     Top5]: {[f'{p}({s:.3f})' for p, s in top5_bge]}")
-        print(f"  [wangchan   Top5]: {[f'{p}({s:.3f})' for p, s in top5_wangchan]}")
-        print(f"  [BM25       Top5]: {[f'{p}({s:.3f})' for p, s in top5_bm25]}")
-        print(f"  [Final Hybrid Top5]: {[f'{p}({s:.3f})' for p, s in top5_final]}")
-                
         if not scores:
-            print("[WARN] No embeddings or BM25 found. Falling back to basic word overlap search for testing.")
+            print("[WARN] No embeddings found. Falling back to word overlap.")
             query_words = set(str(query).split())
             for p_id in all_para_ids:
                 text_words = set(str(doc_texts[p_id]).split())
-                overlap = len(query_words & text_words)
-                scores[p_id] = overlap
-                
-        # เลือก Top 5 Paragraphs เพื่อคัดเอาแต่เนื้อเน้นๆ เป็น Anchor candidates
+                scores[p_id] = len(query_words & text_words)
+        
+        # --- Top 5 ---
         top_k = 5
         sorted_paras = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+        print(f"  [bge-m3+BM25 Top5]: {[f'{p}({s:.3f})' for p, s in sorted_paras]}")
         
-        # 1. รวบรวม index ของ paragraphs ที่ติด Top 5 และขยายบริบทให้กว้าง (Anchor & Expand)
-        selected_indices = set()
+        # ==============================================
+        # STAGE 2: จัดกลุ่ม Top 5 เป็น Clusters
+        # ==============================================
+        # แปลง para_id → index ในเอกสาร แล้วเรียงตามลำดับ
+        top_indices = []
         for p_id, score in sorted_paras:
             try:
                 idx = all_para_ids.index(p_id)
-                selected_indices.add(idx)
-                # ดึงไปข้างหน้า 8 อัน และย้อนหลัง 4 อัน เพื่อให้ AI มีบริบทพอที่จะหา Semantic Boundaries (จุดเริ่มต้นและจุดสิ้นสุดของเรื่อง)
-                for offset in range(-4, 9):
-                    neighbor_idx = idx + offset
-                    if 0 <= neighbor_idx < len(all_para_ids):
-                        selected_indices.add(neighbor_idx)
+                top_indices.append((idx, p_id, score))
             except ValueError:
                 pass
-                
-        # 2. เรียงลำดับตามเนื้อหาต้นฉบับ (Chronological Order) ไม่ใช่เรียงตามคะแนน
-        sorted_indices = sorted(list(selected_indices))
+        top_indices.sort(key=lambda x: x[0])
         
-        # 3. สร้างข้อความให้ LLM อ่านแบบต่อเนื่องเหมือนอ่านเอกสารจริง
-        paragraphs_to_read = []
-        for idx in sorted_indices:
-            p_id = all_para_ids[idx]
-            raw_text = str(doc_texts.get(p_id, ""))
-            paragraphs_to_read.append(f"[{p_id}]: {raw_text.strip()}")
+        # จัดกลุ่ม: ถ้า index ห่างกันไม่เกิน 5 ถือว่าอยู่กลุ่มเดียวกัน
+        groups = []
+        if top_indices:
+            current_group = [top_indices[0]]
+            for i in range(1, len(top_indices)):
+                if top_indices[i][0] - current_group[-1][0] <= 5:
+                    current_group.append(top_indices[i])
+                else:
+                    groups.append(current_group)
+                    current_group = [top_indices[i]]
+            groups.append(current_group)
+        
+        print(f"  [Clusters]: {len(groups)} group(s) formed")
+        
+        # สร้างข้อความแสดงแต่ละกลุ่ม (ขยาย ±2 เพื่อให้ AI เห็นบริบทรอบๆ)
+        group_texts = []
+        group_anchor_ids = []
+        for g_idx, group in enumerate(groups):
+            min_idx = max(0, min(item[0] for item in group) - 2)
+            max_idx = min(len(all_para_ids) - 1, max(item[0] for item in group) + 2)
             
-        context_text_for_llm = "\n".join(paragraphs_to_read)
+            anchors = [item[1] for item in group]
+            group_anchor_ids.append(anchors)
+            
+            lines = []
+            for idx in range(min_idx, max_idx + 1):
+                p_id = all_para_ids[idx]
+                text = str(doc_texts.get(p_id, "")).strip()
+                marker = " ← TOP" if p_id in anchors else ""
+                lines.append(f"[{p_id}]: {text}{marker}")
+            
+            group_texts.append("\n".join(lines))
+            print(f"    Group {g_idx + 1}: {all_para_ids[min_idx]}–{all_para_ids[max_idx]} (anchors: {anchors})")
+        
+        # ==============================================
+        # STAGE 3: LLM Pass 1 — เลือกก้อนที่ดีที่สุด
+        # ==============================================
+        if len(groups) == 1:
+            best_group_idx = 0
+            print(f"[INFO] Stage 2: Only 1 cluster → skip anchor LLM call")
+        else:
+            print(f"[INFO] Stage 2: LLM Anchor Selection ({len(groups)} clusters)")
+            
+            groups_display = ""
+            for g_idx, g_text in enumerate(group_texts):
+                groups_display += f"\n=== GROUP {g_idx + 1} ===\n{g_text}\n"
+            
+            anchor_prompt = f"""You are an expert document analyst for Thai parliamentary meeting records.
+You will receive a query and multiple GROUPS of paragraphs.
+Your task: identify which GROUP contains the paragraphs that BEST and MOST DIRECTLY answer the query.
+
+IMPORTANT:
+- Focus on WHERE the actual answer content is, not just keyword matches.
+- If the query asks about a specific agenda item (ระเบียบวาระที่ X), find the group that contains the discussion/content of that specific agenda item.
+
+[Query]: {query}
+{groups_display}
+Which group number (1 to {len(groups)}) best answers the query?"""
+            
+            try:
+                anchor_result = llm_client.generate_structured(anchor_prompt, AnchorSelection)
+                if anchor_result:
+                    best_group_idx = max(0, min(anchor_result.best_group_id - 1, len(groups) - 1))
+                    print(f"  [Selected]: Group {best_group_idx + 1} (reason: {anchor_result.reasoning[:80]}...)")
+                else:
+                    best_group_idx = 0
+                    print("[WARN] Anchor selection returned None, using group 1")
+            except Exception as e:
+                print(f"[WARN] Anchor selection failed: {e}, using group 1")
+                best_group_idx = 0
+        
+        # ==============================================
+        # STAGE 4: ขยายก้อนที่ชนะให้ครบเนื้อหา (-4 / +8)
+        # ==============================================
+        winner_group = groups[best_group_idx]
+        anchor_min = min(item[0] for item in winner_group)
+        anchor_max = max(item[0] for item in winner_group)
+        
+        expand_min = max(0, anchor_min - 4)
+        expand_max = min(len(all_para_ids) - 1, anchor_max + 8)
+        
+        expanded_lines = []
+        for idx in range(expand_min, expand_max + 1):
+            p_id = all_para_ids[idx]
+            text = str(doc_texts.get(p_id, "")).strip()
+            expanded_lines.append(f"[{p_id}]: {text}")
+        
+        context_text_for_llm = "\n".join(expanded_lines)
+        print(f"  [Expanded]: {all_para_ids[expand_min]}–{all_para_ids[expand_max]} ({expand_max - expand_min + 1} paragraphs)")
         
     else:
-        # 🔴 ROUND 3: Brute Force (Panic Mode)
-        print(f"[INFO] Round {retry_count + 1} - Final Retry. BRUTE FORCE Mode activated! Reading entire document.")
+        # 🔴 BRUTE FORCE (Panic Mode)
+        print(f"[INFO] Round {retry_count + 1} - BRUTE FORCE Mode! Reading entire document.")
         context_text_for_llm = "\n".join([f"[{p_id}]: {text}" for p_id, text in doc_texts.items()])
     
-    # ----------------------------------------------------
-    # STAGE 2: LLM Ranker (Agent A - LLM Call 2)
-    # ----------------------------------------------------
-    print(f"[INFO] Stage 2: LLM Ranker running...")
-    feedback_str = f"Feedback from Validator (Retry): {feedback}" if feedback else "No feedback. Initial run."
+    # ==============================================
+    # STAGE 5: LLM Pass 2 — กรองเอาแค่เนื้อที่ต้องใช้สรุป
+    # ==============================================
+    print(f"[INFO] Stage 3: LLM Meat Filter running...")
+    feedback_str = f"\n[Feedback from Validator]: {feedback}" if feedback else ""
     
     skill_file_path = os.path.join("skills", "skill_retriever_ranker.md")
     system_instruction = ""
     try:
         with open(skill_file_path, "r", encoding="utf-8") as f:
             system_instruction = f.read()
-    except Exception as e:
-        print(f"[WARN] Could not load skill file: {e}")
-        system_instruction = "You are an expert Retriever and Ranker."
+    except Exception:
+        system_instruction = "You are an expert paragraph selector. Select ONLY paragraphs needed to answer the query."
     
     prompt = f"""{system_instruction}
 
@@ -239,21 +221,20 @@ YOUR CURRENT TASK: Analyze this query and provide weights.
 YOUR CURRENT TASK:
 
 [Query]: {query}
-[System State]: {feedback_str}
-
+{feedback_str}
 [Context Paragraphs to Evaluate]:
 {context_text_for_llm}
 ==================================================
 """
     
     try:
-        ranker_output = llm_client.generate_structured(prompt, RankerOutput)
-        if ranker_output:
-            selected_refs = ranker_output.selected_refs
-            selected_context = ranker_output.selected_context
+        filter_output = llm_client.generate_structured(prompt, FinalFilterOutput)
+        if filter_output:
+            selected_refs = filter_output.selected_refs
+            selected_context = filter_output.selected_context
             print(f"Agent A selected {len(selected_refs)} refs: {selected_refs}")
         else:
-            selected_refs = all_para_ids[:3] 
+            selected_refs = all_para_ids[:3]
             selected_context = "Fallback context"
             print("[WARN] Agent A returned None, using fallback.")
             

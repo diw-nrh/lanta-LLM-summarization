@@ -5,7 +5,7 @@ from nodes.document_store import document_store
 from nodes.embedder import embedder
 import os
 
-def initialize_system(json_path, target_doc_id="doc_001"):
+def initialize_system(json_path, target_doc_id="doc_002"):
     print("--- SYSTEM INITIALIZATION ---")
     
     # 1. โหลดข้อมูล Text จาก JSON เข้าสู่ Store
