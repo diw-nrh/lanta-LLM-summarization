@@ -5,7 +5,7 @@ from nodes.document_store import document_store
 from nodes.embedder import embedder
 import os
 
-def initialize_system(json_path, target_doc_id="doc_002"):
+def initialize_system(json_path, target_doc_id="doc_001"):
     print("--- SYSTEM INITIALIZATION ---")
     
     # 1. โหลดข้อมูล Text จาก JSON เข้าสู่ Store
@@ -61,7 +61,7 @@ def main():
         print(f"[ERROR] Dataset not found: {json_path}")
         return
 
-    first_doc_id = "doc_002"
+    first_doc_id = "doc_001"
     initialize_system(json_path, target_doc_id=first_doc_id)
     
     print("\n--- STARTING LANGGRAPH PIPELINE ---")
@@ -70,7 +70,7 @@ def main():
         dataset = json.load(f)
         
     # ดึงเฉพาะคำถามที่เป็นของ doc_001 (Doc แรกสุด)
-    first_doc_id = "doc_002"
+    first_doc_id = "doc_001"
     queries = [q for q in dataset.get("queries", []) if q.get("doc_id") == first_doc_id]
     
     if args.limit > 0:
