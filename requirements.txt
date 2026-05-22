@@ -1,0 +1,34 @@
+# PyTorch with CUDA 11.8 support
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch==2.1.0+cu118
+torchaudio==2.1.0+cu118
+torchvision==0.16.0+cu118
+
+# Large Language Model & HuggingFace
+transformers==4.36.2
+accelerate==0.25.0
+pydantic==2.5.0
+pydantic-core==2.14.1
+
+# LangGraph - Workflow orchestration
+langgraph==0.0.32
+langchain==0.1.4
+langchain-community==0.0.14
+
+# Embeddings & Retrieval
+sentence-transformers==2.2.2
+rank-bm25==0.2.2
+scikit-learn==1.3.2
+
+# Data Processing
+pandas==2.1.3
+numpy==1.26.2
+
+# Jupyter Notebook Support
+jupyter==1.0.0
+ipykernel==6.27.1
+notebook==7.0.6
+
+# Development & Utilities
+python-dotenv==1.0.0
+requests==2.31.0
