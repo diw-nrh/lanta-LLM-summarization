@@ -26,14 +26,9 @@ Starting from your Anchor, look at the paragraphs immediately preceding it.
 - Backwards Boundary identified: P[para_id]
 
 ## Thought 4 [Expand Forwards for Completeness]
-Starting from your Anchor, look at the paragraphs immediately following it.
-- Does the answer span multiple paragraphs? (e.g., a continuous explanation or a continuous list of names).
-- **CRITICAL STOPPING RULE**: Stop expanding immediately when:
-  1. A new person starts speaking or is introduced.
-  2. A new sub-item or new document is mentioned (e.g., "เรื่องที่ ๑", "เรื่องที่ ๔...").
-  3. The specific suggestion or context of the Anchor ends, even if you are still within the same main Agenda.
-- Do NOT grab the entire Agenda. Only grab the specific semantic block that tightly belongs to the Anchor.
-- Forwards Boundary identified: P[para_id]
+- Does the answer span multiple paragraphs? (e.g., a list of names, a continuation of the same suggestion)
+- Expand forwards until the topic changes or a new agenda begins.
+- If the Anchor itself is the complete answer, do not expand forwards.
 
 ## Thought 5 [Final Block Construction]
 Combine the Backwards Boundary, the Anchor, and the Forwards Boundary into a single contiguous block of paragraphs.
