@@ -138,11 +138,20 @@ YOUR CURRENT TASK: Analyze this query and provide weights.
                 bm25_scores[p_id] = raw_bm25_scores[idx] / max_bm25
                 
         scores = {}
+        # เก็บคะแนนแยกแต่ละ model เพื่อ debug
+        scores_e5 = {}
+        scores_bge = {}
+        scores_wangchan = {}
+        
         if doc_embeddings:
             for p_id, p_vecs in doc_embeddings.items():
-                score_bge = np.dot(q_vec_bge, p_vecs) if q_vec_bge is not None else 0
-                score_e5 = np.dot(q_vec_e5, p_vecs) if q_vec_e5 is not None else 0
-                score_wangchan = np.dot(q_vec_wangchan, p_vecs) if q_vec_wangchan is not None else 0
+                score_bge = float(np.dot(q_vec_bge, p_vecs)) if q_vec_bge is not None else 0
+                score_e5 = float(np.dot(q_vec_e5, p_vecs)) if q_vec_e5 is not None else 0
+                score_wangchan = float(np.dot(q_vec_wangchan, p_vecs)) if q_vec_wangchan is not None else 0
+                
+                scores_e5[p_id] = score_e5
+                scores_bge[p_id] = score_bge
+                scores_wangchan[p_id] = score_wangchan
                 
                 vector_score = (score_e5 * w_e5) + (score_bge * w_bge) + (score_wangchan * w_wangchan)
                 
@@ -152,6 +161,19 @@ YOUR CURRENT TASK: Analyze this query and provide weights.
                 final_score = (vector_score * 0.7) + (bm25_score * 0.3)
                 
                 scores[p_id] = float(final_score)
+        
+        # --- LOG: แสดง Top 5 ของแต่ละ model ---
+        top5_e5 = sorted(scores_e5.items(), key=lambda x: x[1], reverse=True)[:5]
+        top5_bge = sorted(scores_bge.items(), key=lambda x: x[1], reverse=True)[:5]
+        top5_wangchan = sorted(scores_wangchan.items(), key=lambda x: x[1], reverse=True)[:5]
+        top5_bm25 = sorted(bm25_scores.items(), key=lambda x: x[1], reverse=True)[:5]
+        top5_final = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        print(f"  [e5-large   Top5]: {[f'{p}({s:.3f})' for p, s in top5_e5]}")
+        print(f"  [bge-m3     Top5]: {[f'{p}({s:.3f})' for p, s in top5_bge]}")
+        print(f"  [wangchan   Top5]: {[f'{p}({s:.3f})' for p, s in top5_wangchan]}")
+        print(f"  [BM25       Top5]: {[f'{p}({s:.3f})' for p, s in top5_bm25]}")
+        print(f"  [Final Hybrid Top5]: {[f'{p}({s:.3f})' for p, s in top5_final]}")
                 
         if not scores:
             print("[WARN] No embeddings or BM25 found. Falling back to basic word overlap search for testing.")
