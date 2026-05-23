@@ -5,20 +5,17 @@ from nodes.document_store import document_store
 from nodes.embedder import embedder
 import os
 
-def initialize_system(json_path, target_doc_id="doc_001"):
+def initialize_system(json_path):
     print("--- SYSTEM INITIALIZATION ---")
     
     # 1. โหลดข้อมูล Text จาก JSON เข้าสู่ Store
     document_store.load_from_json(json_path)
     
-    # กรองเฉพาะ doc ที่เราต้องการเทส
-    target_docs = {k: v for k, v in document_store.texts.items() if k == target_doc_id}
+    # 2. แปลง Text เป็น Vectors (Embeddings) สำหรับเอกสารทั้งหมด
+    print(f"Generating embeddings for all documents... This might take a while on the first run.")
+    doc_count = len(document_store.texts)
     
-    # 2. แปลง Text เป็น Vectors (Embeddings) สำหรับโหมด Vector Search (Round 1 & 2)
-    print(f"Generating embeddings ONLY for {target_doc_id}... This will be fast!")
-    doc_count = len(target_docs)
-    
-    for i, (doc_id, paragraphs) in enumerate(target_docs.items(), 1):
+    for i, (doc_id, paragraphs) in enumerate(document_store.texts.items(), 1):
         para_ids = list(paragraphs.keys())
         texts = list(paragraphs.values())
         
@@ -61,21 +58,20 @@ def main():
         print(f"[ERROR] Dataset not found: {json_path}")
         return
 
-    first_doc_id = "doc_001"
-    initialize_system(json_path, target_doc_id=first_doc_id)
+    initialize_system(json_path)
     
     print("\n--- STARTING LANGGRAPH PIPELINE ---")
     
     with open(json_path, 'r', encoding='utf-8') as f:
         dataset = json.load(f)
         
-    # ดึงเฉพาะคำถามที่เป็นของ doc_001 (Doc แรกสุด)
-    first_doc_id = "doc_001"
-    queries = [q for q in dataset.get("queries", []) if q.get("doc_id") == first_doc_id]
+    # ดึงคำถามทั้งหมดจากไฟล์ JSON
+    queries = dataset.get("queries", [])
     
     if args.limit > 0:
         queries = queries[:args.limit]
-    print(f"Found {len(queries)} queries for document {first_doc_id} to process (limited for testing).")
+        
+    print(f"Found {len(queries)} queries to process.")
     
     for idx, q in enumerate(queries, 1):
         inputs = {
