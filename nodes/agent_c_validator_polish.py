@@ -3,9 +3,6 @@ from pydantic import BaseModel, Field
 import os
 from .llm_clients import llm_client
 
-# -------------------------------------------------------------------
-# Pydantic Schemas for LLM Structured Output (Agent C)
-# -------------------------------------------------------------------
 class ValidatorThoughtProcess(BaseModel):
     evaluation: str = Field(description="Evaluate drafts for truthfulness and completeness")
     fact_check: str = Field(description="Verify all facts against the context")
@@ -18,10 +15,7 @@ class ValidatorOutput(BaseModel):
     feedback: str = Field(description="Specific feedback for the target agent if invalid")
     final_answer: str = Field(description="The polished answer if valid, or best-effort answer if retry limits reached")
 
-# -------------------------------------------------------------------
-# LangGraph Node
-# -------------------------------------------------------------------
-def validator_node(state: Dict[str, Any]) -> Dict[str, Any]:
+async def validator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- RUNNING AGENT C: VALIDATOR & VOTER ---")
     query = state.get("query", "")
     drafts = state.get("abstractive_drafts", [])
@@ -30,7 +24,6 @@ def validator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     retry_count = state.get("retry_count", 0)
     
     if abstractive == "ไม่พบคำตอบ":
-        print("[INFO] Abstractive is 'ไม่พบคำตอบ'. Short-circuiting Validator.")
         return {
             "is_valid": True,
             "route_to": "none",
@@ -41,13 +34,13 @@ def validator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     drafts_str = "\n".join([f"Draft {i+1}:\n{d}" for i, d in enumerate(drafts)]) if drafts else abstractive
     
-    skill_file_path = os.path.join("skills", "skill_validator_polish.md")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    skill_file_path = os.path.abspath(os.path.join(current_dir, "..", "skills", "skill_validator_polish.md"))
     system_instruction = ""
     try:
         with open(skill_file_path, "r", encoding="utf-8") as f:
             system_instruction = f.read()
     except Exception as e:
-        print(f"[WARN] Could not load skill file: {e}")
         system_instruction = "You are an expert Validator."
         
     prompt = f"""{system_instruction}
@@ -68,19 +61,16 @@ INSTRUCTION: Evaluate all drafts. Select the best one, polish it, and return as 
 ==================================================
 """
     try:
-        val_output = llm_client.generate_structured(prompt, ValidatorOutput)
+        val_output = await llm_client.agenerate_structured(prompt, ValidatorOutput)
         if val_output:
             is_valid = val_output.is_valid
             route_to = val_output.route_to.lower()
             feedback = val_output.feedback
-            # Override abstractive with final polished version
             state["abstractive"] = val_output.final_answer
-            print(f"Agent C Result: valid={is_valid}, route={route_to}")
         else:
             is_valid = True
             route_to = "none"
             feedback = ""
-            print("[WARN] Agent C returned None, forcing valid.")
     except Exception as e:
         print(f"[ERROR] Agent C Failed: {e}")
         is_valid = True

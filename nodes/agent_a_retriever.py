@@ -2,11 +2,10 @@ from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 import numpy as np
 import os
+import asyncio
 from .document_store import document_store
 from .embedder import embedder
 from .llm_clients import llm_client
-
-import concurrent.futures
 
 try:
     from rank_bm25 import BM25Okapi
@@ -18,58 +17,46 @@ except ImportError:
 # -------------------------------------------------------------------
 # Pydantic Schemas
 # -------------------------------------------------------------------
-# --- LLM Pass 1: ให้คะแนนและประเมินแต่ละก้อน (Scoring) ---
 class GroupEvaluation(BaseModel):
     reasoning: str = Field(description="Analysis of how well this group answers the query")
     score: int = Field(description="Score from 1 to 10. 10 = perfectly contains the exact answer, 1 = irrelevant or just headers")
 
-# --- LLM Pass 1.5: เลือกก้อนที่ดีที่สุดจาก Top 3 ---
 class AnchorSelection(BaseModel):
     reasoning: str = Field(description="Analysis of which group best answers the query among the top choices")
     best_group_id: int = Field(description="The 1-indexed ID of the best group")
 
-
-# --- LLM Pass 2: กรองเอาแค่เนื้อที่ต้องใช้สรุป ---
 class FinalFilterOutput(BaseModel):
     reasoning: str = Field(description="Why these paragraphs were selected for the summary")
     selected_refs: List[str] = Field(description="Final list of para_ids needed to answer the query")
     selected_context: str = Field(description="Combined text of selected paragraphs")
 
 # -------------------------------------------------------------------
-# LangGraph Node
+# LangGraph Node (Async)
 # -------------------------------------------------------------------
-def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
+async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- RUNNING AGENT A: RETRIEVER (2-Pass) ---")
     query = state.get("query", "")
     doc_id = state.get("doc_id", "")
     feedback = state.get("feedback", "")
     retry_count = state.get("retry_count", 0)
     
-    # ดึงข้อมูลทั้งหมดใน doc_id ออกมาก่อน
     doc_texts = document_store.get_paragraphs(doc_id)
     if not doc_texts:
         print(f"[WARN] No paragraphs found for doc_id: {doc_id}")
         return {"context": "", "refs": []}
         
     all_para_ids = list(doc_texts.keys())
-    
     context_text_for_llm = ""
     
-    # ====================================================
-    # NORMAL MODE (retry < 2)
-    # ====================================================
     if retry_count < 2:
-        
         # ==============================================
         # STAGE 1: Hybrid Search (bge-m3 + BM25)
         # ==============================================
         print(f"[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)")
-        
         query_vecs = embedder.encode_query(query)
         doc_embeddings = document_store.get_embeddings(doc_id)
         q_vec = query_vecs.get("bge-m3")
         
-        # --- BM25 Setup ---
         bm25_scores = {}
         if HAS_BM25 and all_para_ids:
             tokenized_corpus = [str(doc_texts[p]).split(" ") for p in all_para_ids]
@@ -80,7 +67,6 @@ def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
             for idx, p_id in enumerate(all_para_ids):
                 bm25_scores[p_id] = raw_bm25_scores[idx] / max_bm25
         
-        # --- Scoring: bge-m3 (70%) + BM25 (30%) ---
         scores = {}
         if doc_embeddings and q_vec is not None:
             for p_id, p_vecs in doc_embeddings.items():
@@ -90,24 +76,17 @@ def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 scores[p_id] = final_score
         
         if not scores:
-            print("[WARN] No embeddings found. Falling back to word overlap.")
             query_words = set(str(query).split())
             for p_id in all_para_ids:
                 text_words = set(str(doc_texts[p_id]).split())
                 scores[p_id] = len(query_words & text_words)
         
-        # --- Top K ---
-        # เพิ่ม Top-K จาก 5 เป็น 15 เพื่อแก้ปัญหา "ตัวหลอก" (Distractor) 
-        # เช่น คำถามมีคำว่า "ครั้งที่ 31" ทำให้ Header (P1-P5) ได้คะแนนนำ 
-        # การดึงเผื่อไว้ 15 อัน จะช่วยให้เนื้อหาจริงๆ (เช่น P71) ติดร่างแหมาด้วย
         top_k = 15
         sorted_paras = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-        print(f"  [bge-m3+BM25 Top{top_k}]: {[f'{p}({s:.3f})' for p, s in sorted_paras]}")
         
         # ==============================================
-        # STAGE 2: จัดกลุ่ม Top 5 เป็น Clusters
+        # STAGE 2: จัดกลุ่ม Top K เป็น Clusters
         # ==============================================
-        # แปลง para_id → index ในเอกสาร แล้วเรียงตามลำดับ
         top_indices = []
         for p_id, score in sorted_paras:
             try:
@@ -117,7 +96,6 @@ def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 pass
         top_indices.sort(key=lambda x: x[0])
         
-        # จัดกลุ่ม: ถ้า index ห่างกันไม่เกิน 5 ถือว่าอยู่กลุ่มเดียวกัน
         groups = []
         if top_indices:
             current_group = [top_indices[0]]
@@ -129,15 +107,11 @@ def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
                     current_group = [top_indices[i]]
             groups.append(current_group)
         
-        print(f"  [Clusters]: {len(groups)} group(s) formed")
-        
-        # สร้างข้อความแสดงแต่ละกลุ่ม (ขยาย ±2 เพื่อให้ AI เห็นบริบทรอบๆ)
         group_texts = []
         group_anchor_ids = []
         for g_idx, group in enumerate(groups):
             min_idx = max(0, min(item[0] for item in group) - 2)
             max_idx = min(len(all_para_ids) - 1, max(item[0] for item in group) + 2)
-            
             anchors = [item[1] for item in group]
             group_anchor_ids.append(anchors)
             
@@ -147,20 +121,16 @@ def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 text = str(doc_texts.get(p_id, "")).strip()
                 marker = " ← TOP" if p_id in anchors else ""
                 lines.append(f"[{p_id}]: {text}{marker}")
-            
             group_texts.append("\n".join(lines))
-            print(f"    Group {g_idx + 1}: {all_para_ids[min_idx]}–{all_para_ids[max_idx]} (anchors: {anchors})")
         
         # ==============================================
-        # STAGE 3: LLM Pass 1 — ประเมินและให้คะแนนทีละก้อน (Concurrent)
+        # STAGE 3: LLM Pass 1 — ประเมินและให้คะแนน (BATCHING)
         # ==============================================
         if len(groups) == 1:
             best_group_idx = 0
-            print(f"[INFO] Stage 2: Only 1 cluster → skip anchor scoring")
         else:
-            print(f"[INFO] Stage 2: Concurrent Scoring ({len(groups)} clusters)")
-            
-            def evaluate_group(g_idx: int, g_text: str):
+            prompts_list = []
+            for g_idx, g_text in enumerate(group_texts):
                 prompt = f"""You are a strict document evaluator for Thai parliamentary meeting records.
 [Query]: {query}
 
@@ -172,33 +142,26 @@ Be extremely strict. If this group only contains the agenda title (e.g. "ระ�
 If it contains the actual substantive answer, score it HIGH (8-10).
 
 Give your reasoning and then a final score from 1 to 10."""
+                prompts_list.append(prompt)
                 
-                try:
-                    result = llm_client.generate_structured(prompt, GroupEvaluation)
-                    return (g_idx, result.score, result.reasoning)
-                except Exception as e:
-                    return (g_idx, 0, f"Error: {e}")
+            # ส่งเข้า vLLM รวดเดียวแบบ Async
+            tasks = [llm_client.agenerate_structured(p, GroupEvaluation) for p in prompts_list]
+            batch_results = await asyncio.gather(*tasks)
             
             eval_results = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(groups))) as executor:
-                futures = [executor.submit(evaluate_group, i, group_texts[i]) for i in range(len(groups))]
-                for future in concurrent.futures.as_completed(futures):
-                    eval_results.append(future.result())
+            for g_idx, res in enumerate(batch_results):
+                if res:
+                    eval_results.append((g_idx, res.score, res.reasoning))
+                else:
+                    eval_results.append((g_idx, 0, "Error parsing JSON from LLM"))
             
-            # เรียงลำดับตามคะแนน (มากไปน้อย)
             eval_results.sort(key=lambda x: x[1], reverse=True)
             
-            for r in eval_results:
-                print(f"  [Group {r[0] + 1} Score]: {r[1]}/10 (Reason: {r[2][:80]}...)")
-            
-            # --- นำ Top 3 มาเลือกอีกทีว่าอันไหนตรงสุด ---
             top_3 = eval_results[:3]
             if len(top_3) == 1:
                 best_group_idx = top_3[0][0]
             else:
-                print(f"[INFO] Stage 2.5: Final Selection from Top {len(top_3)} groups")
                 groups_display = ""
-                # แสดงแค่กลุ่มที่ติด Top 3
                 for r in top_3:
                     g_idx = r[0]
                     groups_display += f"\n=== GROUP {g_idx + 1} ===\n{group_texts[g_idx]}\n"
@@ -213,17 +176,15 @@ Which group number best and most directly answers the query?
 Select the exact group number (e.g. if you select 'GROUP 4', output 4).
 Give your reasoning and then the best_group_id."""
                 try:
-                    anchor_result = llm_client.generate_structured(anchor_prompt, AnchorSelection)
+                    # รอผลลัพธ์จาก vLLM
+                    anchor_result = await llm_client.agenerate_structured(anchor_prompt, AnchorSelection)
                     if anchor_result:
                         best_group_idx = max(0, min(anchor_result.best_group_id - 1, len(groups) - 1))
-                        # เช็คเพื่อป้องกัน LLM คืนค่ากลุ่มที่ไม่ได้อยู่ใน Top 3
                         if not any(r[0] == best_group_idx for r in top_3):
                             best_group_idx = top_3[0][0]
-                        print(f"  [Selected]: Group {best_group_idx + 1} (reason: {anchor_result.reasoning[:80]}...)")
                     else:
                         best_group_idx = top_3[0][0]
                 except Exception as e:
-                    print(f"[WARN] Final selection failed: {e}")
                     best_group_idx = top_3[0][0]
         
         # ==============================================
@@ -243,11 +204,9 @@ Give your reasoning and then the best_group_id."""
             expanded_lines.append(f"[{p_id}]: {text}")
         
         context_text_for_llm = "\n".join(expanded_lines)
-        print(f"  [Expanded]: {all_para_ids[expand_min]}–{all_para_ids[expand_max]} ({expand_max - expand_min + 1} paragraphs)")
         
     else:
-        # 🔴 ABORT INSTEAD OF BRUTE FORCE
-        print(f"[INFO] Round {retry_count + 1} - Max retries reached. Aborting search.")
+        # ABORT INSTEAD OF BRUTE FORCE
         return {
             "query": query,
             "context": "ไม่พบคำตอบ",
@@ -259,10 +218,10 @@ Give your reasoning and then the best_group_id."""
     # ==============================================
     # STAGE 5: LLM Pass 2 — กรองเอาแค่เนื้อที่ต้องใช้สรุป
     # ==============================================
-    print(f"[INFO] Stage 3: LLM Meat Filter running...")
     feedback_str = f"\n[Feedback from Validator]: {feedback}" if feedback else ""
     
-    skill_file_path = os.path.join("skills", "skill_retriever_ranker.md")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    skill_file_path = os.path.abspath(os.path.join(current_dir, "..", "skills", "skill_retriever_ranker.md"))
     system_instruction = ""
     try:
         with open(skill_file_path, "r", encoding="utf-8") as f:
@@ -283,15 +242,13 @@ YOUR CURRENT TASK:
 """
     
     try:
-        filter_output = llm_client.generate_structured(prompt, FinalFilterOutput)
+        filter_output = await llm_client.agenerate_structured(prompt, FinalFilterOutput)
         if filter_output:
             selected_refs = filter_output.selected_refs
             selected_context = filter_output.selected_context
-            print(f"Agent A selected {len(selected_refs)} refs: {selected_refs}")
         else:
             selected_refs = all_para_ids[:3]
             selected_context = "Fallback context"
-            print("[WARN] Agent A returned None, using fallback.")
             
     except Exception as e:
         print(f"[ERROR] Agent A Failed: {e}")

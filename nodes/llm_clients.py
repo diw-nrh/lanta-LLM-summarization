@@ -1,85 +1,67 @@
+import json
+import uuid
+import os
 from typing import Type
 from pydantic import BaseModel
-import json
-import re
-from openai import OpenAI
+from vllm.engine.async_llm_engine import AsyncLLMEngine
+from vllm.engine.arg_utils import AsyncEngineArgs
+from vllm import SamplingParams
 
 class LLMClient:
     def __init__(self):
-        print("Initializing OpenAI-compatible LLM Client via Novita API...")
+        print("Initializing vLLM AsyncEngine (In-Process)...")
         try:
-            self.client = OpenAI(
-                api_key="sk_r8iPD9QTonepwvFVEmqTaH4gL8PQVX6UGSGyGhh1-WI", # อย่าลืมเปลี่ยนเป็น API Key จริงของคุณ
-                base_url="https://api.novita.ai/openai"
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            model_path = os.path.abspath(os.path.join(current_dir, "../../models/Qwen2.5-14B-Instruct")) 
+            
+            engine_args = AsyncEngineArgs(
+                model=model_path,
+                trust_remote_code=True,
+                max_model_len=8192,
+                tensor_parallel_size=1,
+                gpu_memory_utilization=0.9, # ✅ 1. ต้องเปลี่ยนเป็น 0.9 ครับ (เพราะโมเดล 14B ใหญ่มาก)
+                enforce_eager=True          # ✅ 2. ต้องเติมบรรทัดนี้ เพื่อปิด CUDA Graph และเอา VRAM คืนมาครับ
             )
-            self.model_name = "deepseek/deepseek-v3.2"
-            print(f"--- 🚀 Novita API Client Initialized ({self.model_name})! ---")
+            self.engine = AsyncLLMEngine.from_engine_args(engine_args)
+            print("--- 🚀 Local vLLM Engine Initialized! ---")
         except Exception as e:
-            raise RuntimeError(f"Failed to initialize OpenAI Client: {e}. Please run: pip install openai")
-        
-    def generate(self, prompt: str) -> str:
-        """คืนค่า text ธรรมดา สำหรับ Agent B"""
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=8192,
-                temperature=0.7
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"[ERROR] LLM generation failed: {e}")
-            return ""
-        
-    def generate_structured(self, prompt: str, schema: Type[BaseModel]) -> BaseModel:
-        """
-        คืนค่าเป็น Pydantic Object
-        บังคับ Prompt ให้ตอบเป็น JSON แล้วเอามา parse เข้า Pydantic
-        """
+            raise RuntimeError(f"Failed to initialize vLLM Engine: {e}")
+
+    async def agenerate_structured(self, prompt: str, schema: Type[BaseModel], temperature: float = 0.1) -> BaseModel:
         schema_json = schema.model_json_schema()
-        schema_str = json.dumps(schema_json, ensure_ascii=False, indent=2)
         
-        full_prompt = f"""{prompt}
-
-# Output Instructions
-You MUST return ONLY a raw JSON object that strictly adheres to the following JSON Schema. 
-Do not include markdown code blocks. Do not include any explanations.
-
-JSON Schema:
-{schema_str}
-"""
+        # ❌ ลบ guided_params ออก ใช้แค่ SamplingParams ธรรมดา
+        sampling_params = SamplingParams(
+            temperature=temperature,
+            max_tokens=2048
+        )
         
-        response_text = ""
+        request_id = str(uuid.uuid4())
+        
+        # ✅ บังคับ JSON ด้วย Prompt แทน
+        full_prompt = f"{prompt}\n\n# Output Instructions\nYou MUST return ONLY a raw JSON object that strictly adheres to the schema.\nJSON Schema:\n{json.dumps(schema_json, ensure_ascii=False)}\n\nDo not include markdown code blocks. Just the JSON."
+        
         try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant that always responds with valid JSON."},
-                    {"role": "user", "content": full_prompt}
-                ],
-                max_tokens=8192,
-                temperature=0.1
-            )
-            response_text = response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"[ERROR] LLM generation failed: {e}")
-            return None
-
-        try:
-            # หา JSON block ใน response (รองรับกรณีมี markdown code block ติดมา)
-            match = re.search(r'\{.*\}', response_text, re.DOTALL)
-            if match:
-                data = json.loads(match.group(0))
+            final_output = None
+            async for request_output in self.engine.generate(full_prompt, sampling_params, request_id):
+                final_output = request_output
+                
+            response_text = final_output.outputs[0].text.strip()
+            
+            # ✅ ใช้วิธีดึงข้อมูลระหว่าง { ... } ที่ปลอดภัยที่สุด
+            start_idx = response_text.find('{')
+            end_idx = response_text.rfind('}')
+            
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                json_str = response_text[start_idx:end_idx+1]
+                data = json.loads(json_str)
                 return schema.model_validate(data)
             else:
-                print(f"[WARN] No JSON found in LLM response for {schema.__name__}")
-                return None
+                data = json.loads(response_text)
+                return schema.model_validate(data)
+                
         except Exception as e:
-            print(f"[ERROR] Failed to parse JSON for {schema.__name__}: {e}")
-            print(f"Raw response: {response_text[:200]}...")
+            print(f"[ERROR] Async LLM generation failed: {e}")
             return None
 
 # Global instance

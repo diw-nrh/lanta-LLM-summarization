@@ -20,7 +20,7 @@ def formatter_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "refs": refs_str
     }
     
-    csv_path = r"C:\Users\asus\Desktop\allproject\GitHub\lanta-LLM-summarization\submission.csv"
+    csv_path = r"result/submission.csv"
     
     try:
         if os.path.exists(csv_path) and os.path.getsize(csv_path) > 0:
