@@ -48,17 +48,42 @@ class LLMClient:
                 
             response_text = final_output.outputs[0].text.strip()
             
-            # ✅ ใช้วิธีดึงข้อมูลระหว่าง { ... } ที่ปลอดภัยที่สุด
+            # ✅ วิธีดึง JSON ที่ปลอดภัยที่สุด (นับวงเล็บปีกกาเพื่อดึงเฉพาะ Object แรก)
             start_idx = response_text.find('{')
-            end_idx = response_text.rfind('}')
+            if start_idx != -1:
+                brace_count = 0
+                in_string = False
+                escape = False
+                end_idx = -1
+                
+                for i in range(start_idx, len(response_text)):
+                    char = response_text[i]
+                    if in_string:
+                        if escape:
+                            escape = False
+                        elif char == '\\':
+                            escape = True
+                        elif char == '"':
+                            in_string = False
+                    else:
+                        if char == '"':
+                            in_string = True
+                        elif char == '{':
+                            brace_count += 1
+                        elif char == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                end_idx = i
+                                break
+                
+                if end_idx != -1:
+                    json_str = response_text[start_idx:end_idx+1]
+                    data = json.loads(json_str)
+                    return schema.model_validate(data)
             
-            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-                json_str = response_text[start_idx:end_idx+1]
-                data = json.loads(json_str)
-                return schema.model_validate(data)
-            else:
-                data = json.loads(response_text)
-                return schema.model_validate(data)
+            # ถ้าดึงแบบนับปีกกาไม่สำเร็จ ลอง parse ดื้อๆ ดูก่อน
+            data = json.loads(response_text)
+            return schema.model_validate(data)
                 
         except Exception as e:
             print(f"[ERROR] Async LLM generation failed: {e}")
