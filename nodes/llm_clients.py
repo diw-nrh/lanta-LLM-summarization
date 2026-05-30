@@ -17,9 +17,9 @@ class LLMClient:
             engine_args = AsyncEngineArgs(
                 model=model_path,
                 trust_remote_code=True,
-                max_model_len=8192,
+                max_model_len=10240,
                 tensor_parallel_size=1,
-                gpu_memory_utilization=0.9, # ✅ 1. ต้องเปลี่ยนเป็น 0.9 ครับ (เพราะโมเดล 14B ใหญ่มาก)
+                gpu_memory_utilization=0.8, # ✅ 1. ต้องเปลี่ยนเป็น 0.9 ครับ (เพราะโมเดล 14B ใหญ่มาก)
                 enforce_eager=True          # ✅ 2. ต้องเติมบรรทัดนี้ เพื่อปิด CUDA Graph และเอา VRAM คืนมาครับ
             )
             self.engine = AsyncLLMEngine.from_engine_args(engine_args)
@@ -27,13 +27,13 @@ class LLMClient:
         except Exception as e:
             raise RuntimeError(f"Failed to initialize vLLM Engine: {e}")
 
-    async def agenerate_structured(self, prompt: str, schema: Type[BaseModel], temperature: float = 0.1, max_retries: int = 5) -> BaseModel:
+    async def agenerate_structured(self, prompt: str, schema: Type[BaseModel], temperature: float = 0.1, max_retries: int = 3) -> BaseModel:
         schema_json = schema.model_json_schema()
         
         # ❌ ลบ guided_params ออก ใช้แค่ SamplingParams ธรรมดา
         sampling_params = SamplingParams(
             temperature=temperature,
-            max_tokens=2048
+            max_tokens=4096
         )
         
         # ✅ บังคับ JSON ด้วย Prompt แทน
@@ -41,6 +41,7 @@ class LLMClient:
         
         for attempt in range(max_retries):
             request_id = str(uuid.uuid4())
+            response_text = "" # เอาไว้เก็บข้อความเผื่อตอน Error จะได้ปริ้นท์ดู
             try:
                 final_output = None
                 async for request_output in self.engine.generate(full_prompt, sampling_params, request_id):
@@ -93,12 +94,13 @@ class LLMClient:
                 return schema.model_validate(data)
                     
             except Exception as e:
+                # 🌟 เพิ่มการปริ้นท์ Raw Response ตรงนี้ เพื่อให้เห็นว่า JSON พังยังไง
                 print(f"[WARN] LLM Generation/Parse failed: {e} (Attempt {attempt+1}/{max_retries})")
+                print(f"[DEBUG] Raw response that caused the error:\n{repr(response_text)}")
                 import asyncio
-                await asyncio.sleep(0.5) # เพิ่มเวลาพักให้ GPU เคลียร์ VRAM ตอนรัน Batch โหดๆ
+                await asyncio.sleep(0.8) # รอแป๊บนึงก่อนยิงใหม่
         
         print(f"[ERROR] Async LLM generation failed completely after {max_retries} attempts.")
         return None
-
 # Global instance
 llm_client = LLMClient()

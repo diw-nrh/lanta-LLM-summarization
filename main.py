@@ -111,7 +111,7 @@ def main():
     parser.add_argument("--data", type=str, default=default_data_path, help="Path to JSON dataset")
     
     # แนะนำเริ่มต้นที่ Batch=15 สำหรับ VRAM 40GB ถ้ารันแล้ว VRAM ยังเหลือเยอะค่อยดันเลขขึ้นได้ครับ
-    parser.add_argument("--batch", type=int, default=15, help="จำนวน N ที่ต้องการรันพร้อมกัน") 
+    parser.add_argument("--batch", type=int, default=20, help="จำนวน N ที่ต้องการรันพร้อมกัน") 
     args = parser.parse_args()
     
     if not os.path.exists(args.data):

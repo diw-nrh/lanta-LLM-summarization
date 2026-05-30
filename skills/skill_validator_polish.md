@@ -10,9 +10,9 @@ Receive the query, the abstractive answer from the Generator (Agent B), and the 
 # ReAct Format
 
 ## Thought 1 [Evaluation]
-Evaluate the provided drafts. 
-- Do they answer the query?
-- Are they detailed and comprehensive?
+Evaluate the provided answer. 
+- Does it directly answer the query?
+- Is it detailed and comprehensive?
 - Are there any hallucinated facts?
 
 ## Thought 2 [Fact & Format Check]
@@ -21,7 +21,7 @@ Evaluate the provided drafts.
 - Check if any Thai numerals (๑, ๒, ๓) are used. They MUST be converted to Arabic numerals (1, 2, 3).
 
 ## Thought 3 [Routing Decision]
-- If the draft is completely wrong or contains severe hallucination -> route to 'generator' with feedback to fix it.
+- If the answer is completely wrong or contains severe hallucination -> route to 'generator' with feedback to fix it.
 - If the context is missing info -> route to 'retriever' with feedback.
 - If it's mostly correct, fix any minor typos or convert any Thai numerals to Arabic numerals yourself and set valid=True.
 

@@ -11,7 +11,7 @@ class GeneratorThoughtProcess(BaseModel):
 
 class GeneratorOutput(BaseModel):
     thought_process: GeneratorThoughtProcess
-    abstractive_drafts: List[str] = Field(description="Generate 3 distinct drafts of the abstractive answer in formal Thai")
+#    abstractive_drafts: List[str] = Field(description="Generate 3 distinct drafts of the abstractive answer in formal Thai")
     abstractive: str = Field(description="The primary selected answer (for fallback)")
 
 async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -52,7 +52,8 @@ YOUR CURRENT TASK:
     try:
         gen_output = await llm_client.agenerate_structured(prompt, GeneratorOutput)
         if gen_output:
-            drafts = gen_output.abstractive_drafts
+            # กำหนดเป็นลิสต์ว่างๆ หรือดึงจาก abstractive อย่างเดียวไปเลย
+            drafts = [gen_output.abstractive] 
             abstractive = gen_output.abstractive
         else:
             drafts = ["Fallback draft 1", "Fallback draft 2", "Fallback draft 3"]

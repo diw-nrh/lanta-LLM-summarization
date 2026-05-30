@@ -4,7 +4,8 @@ import os
 from .llm_clients import llm_client
 
 class ValidatorThoughtProcess(BaseModel):
-    evaluation: str = Field(description="Evaluate drafts for truthfulness and completeness")
+    # แก้จาก Evaluate drafts เป็น Evaluate the answer
+    evaluation: str = Field(description="Evaluate the answer for truthfulness and completeness")
     fact_check: str = Field(description="Verify all facts against the context")
     routing_decision: str = Field(description="Decide if it passes or needs routing")
 
@@ -16,10 +17,9 @@ class ValidatorOutput(BaseModel):
     final_answer: str = Field(description="The polished answer if valid, or best-effort answer if retry limits reached")
 
 async def validator_node(state: Dict[str, Any]) -> Dict[str, Any]:
-    print("--- RUNNING AGENT C: VALIDATOR & VOTER ---")
+    print("--- RUNNING AGENT C: VALIDATOR & POLISHER ---")
     query = state.get("query", "")
-    drafts = state.get("abstractive_drafts", [])
-    abstractive = state.get("abstractive", "")
+    abstractive = state.get("abstractive", "") # รับคำตอบเดียวมาเลย
     context = state.get("context", "")
     retry_count = state.get("retry_count", 0)
     
@@ -32,10 +32,9 @@ async def validator_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "retry_count": retry_count
         }
     
-    drafts_str = "\n".join([f"Draft {i+1}:\n{d}" for i, d in enumerate(drafts)]) if drafts else abstractive
-    
     current_dir = os.path.dirname(os.path.abspath(__file__))
     skill_file_path = os.path.abspath(os.path.join(current_dir, "..", "skills", "skill_validator_polish.md"))
+    
     system_instruction = ""
     try:
         with open(skill_file_path, "r", encoding="utf-8") as f:
@@ -46,18 +45,18 @@ async def validator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     prompt = f"""{system_instruction}
 
 ==================================================
-YOUR CURRENT TASK (Self-Consistency Voting):
+YOUR CURRENT TASK (Quality Gate & Polishing):
 
 [Query]: {query}
 [Retry Count]: {retry_count}
 
-[Abstractive Drafts from Agent B]:
-{drafts_str}
+[Answer from Generator (Agent B)]:
+{abstractive}
 
 [Context Grounding from Agent A]:
 {context}
 
-INSTRUCTION: Evaluate all drafts. Select the best one, polish it, and return as final_answer.
+INSTRUCTION: Evaluate the answer. If it is accurate and complete, polish it and return as final_answer. If it fails, route it back with feedback.
 ==================================================
 """
     try:
@@ -81,6 +80,6 @@ INSTRUCTION: Evaluate all drafts. Select the best one, polish it, and return as 
         "is_valid": is_valid,
         "route_to": route_to,
         "feedback": feedback,
-        "abstractive": state["abstractive"],
+        "abstractive": state.get("abstractive", ""),
         "retry_count": retry_count + 1 if not is_valid else retry_count
     }
