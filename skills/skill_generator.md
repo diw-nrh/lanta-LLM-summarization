@@ -14,10 +14,12 @@ Read the query and the selected context provided by the Retriever. Your goal is 
 3. *Anonymity (Do Not Use Personal Names):*
    - Summarize statements as "ที่ประชุม" or "ความเห็นของที่ประชุม" rather than specifying individuals.
 4. *Extractive Accuracy (เน้นความถูกต้องของข้อมูลตามแหล่งอ้างอิง):*
-   - You MUST copy specific entities, numbers, dates, and technical phrases EXACTLY as they appear in the source context. 
+   - You MUST copy specific entities, dates, and technical phrases EXACTLY as they appear in the source context.
    - DO NOT paraphrase or change original terminology, as exact wording is critical for ROUGE-L scoring.
+   - **EXCEPTION:** Numbers must ALWAYS be converted to Arabic numerals (see Rule 5).
 5. *Numerals (การใช้ตัวเลข):*
-   - Use ONLY Arabic numerals (1, 2, 3...) for numbers and years.
+   - Use ONLY Arabic numerals (0, 1, 2, 3, 4, 5, 6, 7, 8, 9) for ALL numbers, lists, bullet points, and years.
+   - If the source context uses Thai numerals (e.g., (๑), (๒), ๒๕๖๗), you MUST CONVERT them to Arabic numerals (e.g., (1), (2), 2567). DO NOT copy Thai numerals under any circumstances.
 
 # Structural Guidelines
 *If the query asks for an "agenda summary" or a "full meeting summary", structure your answer using these 5 standard parts:*

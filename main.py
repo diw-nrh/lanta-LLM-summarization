@@ -56,11 +56,10 @@ async def process_single_query(inputs: dict, semaphore: asyncio.Semaphore):
             print(f"   [ACTUAL REFS]  : {final_state.get('refs', [])}")
             print(f"   [ABSTRACTIVE]  : {final_state.get('abstractive', '')[:50]}...")
             print(f"------------------------------------------\n")
-            
             return {
                 "ID": inputs["query_id"],
-                "abstractive": final_state.get('abstractive', ''),
-                "refs": ",".join(final_state.get('refs', [])) if final_state.get('refs') else ""
+                "abstractive": final_state.get("abstractive", ""),
+                "refs": ",".join(final_state.get("refs", [])) if final_state.get("refs") else ""
             }
         except Exception as e:
             print(f"[ERROR] Pipeline failed on {inputs['query_id']}: {e}")
@@ -96,9 +95,14 @@ async def run_pipeline(json_path: str, concurrent_limit: int):
     csv_path = os.path.join(current_dir, "..", "result", "submission.csv")
     
     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-    
     df = pd.DataFrame(results)
-    df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+    
+    # บังคับลำดับคอลัมน์ (ID -> abstractive -> refs)
+    df = df[["ID", "abstractive", "refs"]]
+    
+    # 🚨 เปลี่ยน encoding จาก utf-8-sig เป็น utf-8 เฉยๆ เพื่อป้องกันบั๊ก BOM (\xef\xbb\xbf)
+    # 🚨 เพิ่ม lineterminator='\n' เพื่อป้องกันบั๊ก \r แอบติดไปกับคอลัมน์สุดท้าย (refs)
+    df.to_csv(csv_path, index=False, encoding='utf-8', lineterminator='\n')
     print(f"\n--- 📝 บันทึกผลลัพธ์ลง {os.path.abspath(csv_path)} สำเร็จ ({len(df)} รายการ) ---")
 
 def main():
@@ -106,12 +110,12 @@ def main():
     
     # 🌟 เทคนิคหาไฟล์แบบยืดหยุ่น: ถอยหลังจากไฟล์ main.py ไปที่โฟลเดอร์ model/test
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    default_data_path = os.path.join(current_dir, "..", "model", "test", "test.json")
+    default_data_path = os.path.join(current_dir, "..", "model", "test", "example_test_set.json")
     
     parser.add_argument("--data", type=str, default=default_data_path, help="Path to JSON dataset")
     
     # แนะนำเริ่มต้นที่ Batch=15 สำหรับ VRAM 40GB ถ้ารันแล้ว VRAM ยังเหลือเยอะค่อยดันเลขขึ้นได้ครับ
-    parser.add_argument("--batch", type=int, default=20, help="จำนวน N ที่ต้องการรันพร้อมกัน") 
+    parser.add_argument("--batch", type=int, default=10, help="จำนวน N ที่ต้องการรันพร้อมกัน") 
     args = parser.parse_args()
     
     if not os.path.exists(args.data):

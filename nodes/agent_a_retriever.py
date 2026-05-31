@@ -28,7 +28,6 @@ class AnchorSelection(BaseModel):
 class FinalFilterOutput(BaseModel):
     reasoning: str = Field(description="Why these paragraphs were selected for the summary")
     selected_refs: List[str] = Field(description="Final list of para_ids needed to answer the query")
-    selected_context: str = Field(description="Combined text of selected paragraphs")
 
 # -------------------------------------------------------------------
 # LangGraph Node (Async)
@@ -37,8 +36,6 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- RUNNING AGENT A: RETRIEVER (2-Pass) ---")
     query = state.get("query", "")
     doc_id = state.get("doc_id", "")
-    feedback = state.get("feedback", "")
-    retry_count = state.get("retry_count", 0)
     
     doc_texts = document_store.get_paragraphs(doc_id)
     if not doc_texts:
@@ -48,7 +45,7 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
     all_para_ids = list(doc_texts.keys())
     context_text_for_llm = ""
     
-    if retry_count < 2:
+    if True:
         # ==============================================
         # STAGE 1: Hybrid Search (bge-m3 + BM25)
         # ==============================================
@@ -204,21 +201,10 @@ Give your reasoning and then the best_group_id."""
             expanded_lines.append(f"[{p_id}]: {text}")
         
         context_text_for_llm = "\n".join(expanded_lines)
-        
-    else:
-        # ABORT INSTEAD OF BRUTE FORCE
-        return {
-            "query": query,
-            "context": "ไม่พบคำตอบ",
-            "feedback": "Max retries reached. No answer found.",
-            "retry_count": retry_count,
-            "refs": []
-        }
     
     # ==============================================
     # STAGE 5: LLM Pass 2 — กรองเอาแค่เนื้อที่ต้องใช้สรุป
     # ==============================================
-    feedback_str = f"\n[Feedback from Validator]: {feedback}" if feedback else ""
     
     current_dir = os.path.dirname(os.path.abspath(__file__))
     skill_file_path = os.path.abspath(os.path.join(current_dir, "..", "skills", "skill_retriever_ranker.md"))
@@ -235,7 +221,6 @@ Give your reasoning and then the best_group_id."""
 YOUR CURRENT TASK:
 
 [Query]: {query}
-{feedback_str}
 [Context Paragraphs to Evaluate]:
 {context_text_for_llm}
 ==================================================
@@ -245,7 +230,11 @@ YOUR CURRENT TASK:
         filter_output = await llm_client.agenerate_structured(prompt, FinalFilterOutput)
         if filter_output:
             selected_refs = filter_output.selected_refs
-            selected_context = filter_output.selected_context
+            selected_lines = []
+            for p_id in selected_refs:
+                if p_id in doc_texts:
+                    selected_lines.append(f"[{p_id}]: {doc_texts[p_id]}")
+            selected_context = "\n".join(selected_lines) if selected_lines else "ไม่พบข้อมูลที่ต้องการ"
         else:
             selected_refs = all_para_ids[:3]
             selected_context = "Fallback context"
@@ -254,6 +243,8 @@ YOUR CURRENT TASK:
         print(f"[ERROR] Agent A Failed: {e}")
         selected_refs = all_para_ids[:3]
         selected_context = "Fallback context"
+    
+    print("[DEBUG] : " ,selected_context,"[refs] :",selected_refs)
         
     return {
         "context": selected_context,
