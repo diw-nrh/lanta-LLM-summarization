@@ -26,7 +26,7 @@ class AnchorSelection(BaseModel):
     best_group_id: int = Field(description="The 1-indexed ID of the best group")
 
 class FinalFilterOutput(BaseModel):
-    reasoning: str = Field(description="Why these paragraphs were selected for the summary")
+    reasoning: str = Field(description="Step-by-step analysis of each provided paragraph to determine if it should be selected.")
     selected_refs: List[str] = Field(description="Final list of para_ids needed to answer the query")
 
 # -------------------------------------------------------------------

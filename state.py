@@ -34,3 +34,4 @@ class GraphState(TypedDict, total=False):
     
     # State จาก Agent B
     abstractive: str
+    used_refs: List[str]

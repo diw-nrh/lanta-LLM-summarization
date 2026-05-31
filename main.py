@@ -53,13 +53,15 @@ async def process_single_query(inputs: dict, semaphore: asyncio.Semaphore):
             final_state = await app.ainvoke(inputs)
             
             print(f"✅ --- RESULT FOR {inputs['query_id']} ---")
+            print(f"[QUERY] {inputs['query']}")
             print(f"   [ACTUAL REFS]  : {final_state.get('refs', [])}")
+            print(f"[REFS USED] {final_state.get('used_refs', [])}")
             print(f"   [ABSTRACTIVE]  : {final_state.get('abstractive', '')[:50]}...")
             print(f"------------------------------------------\n")
             return {
                 "ID": inputs["query_id"],
                 "abstractive": final_state.get("abstractive", ""),
-                "refs": ",".join(final_state.get("refs", [])) if final_state.get("refs") else ""
+                "refs": ",".join(final_state.get("used_refs", [])) if final_state.get("used_refs") else ""
             }
         except Exception as e:
             print(f"[ERROR] Pipeline failed on {inputs['query_id']}: {e}")

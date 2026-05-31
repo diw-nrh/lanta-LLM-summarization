@@ -9,6 +9,7 @@ class GeneratorOutput(BaseModel):
     self_correction: str = Field(description="Check for hallucinations and completeness")
     final_polish: str = Field(description="Ensure tone is formal and correct")
     abstractive: str = Field(description="The primary selected answer (for fallback)")
+    used_refs: List[str] = Field(description="List of paragraph IDs (e.g., ['P1', 'P2']) that were actually used to write the abstractive answer. Extract these from the [P_ID] tags in the context.")
 
 async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- RUNNING AGENT B: GENERATOR ---")
@@ -17,7 +18,8 @@ async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     if context == "ไม่พบคำตอบ":
         return {
-            "abstractive": "ไม่พบคำตอบ"
+            "abstractive": "ไม่พบคำตอบ",
+            "used_refs": []
         }
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -45,14 +47,18 @@ YOUR CURRENT TASK:
         gen_output = await llm_client.agenerate_structured(prompt, GeneratorOutput)
         if gen_output:
             abstractive = gen_output.abstractive
+            used_refs = gen_output.used_refs
             thai_to_arabic = str.maketrans('๐๑๒๓๔๕๖๗๘๙', '0123456789')
             abstractive = abstractive.translate(thai_to_arabic)
         else:
             abstractive = "Fallback abstractive answer due to parse error."
+            used_refs = []
     except Exception as e:
         print(f"[ERROR] Agent B Failed: {e}")
         abstractive = "Error during generation."
+        used_refs = []
         
     return {
-        "abstractive": abstractive
+        "abstractive": abstractive,
+        "used_refs": used_refs
     }
