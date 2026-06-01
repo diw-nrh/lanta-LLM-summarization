@@ -107,8 +107,9 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
         group_texts = []
         group_anchor_ids = []
         for g_idx, group in enumerate(groups):
-            min_idx = max(0, min(item[0] for item in group) - 2)
-            max_idx = min(len(all_para_ids) - 1, max(item[0] for item in group) + 2)
+            # 🌟 แก้ไขตรงนี้: ขยายบริบทตั้งแต่ตอนแรกเป็น -4 / +8 ไปเลย!
+            min_idx = max(0, min(item[0] for item in group) - 4)
+            max_idx = min(len(all_para_ids) - 1, max(item[0] for item in group) + 8)
             anchors = [item[1] for item in group]
             group_anchor_ids.append(anchors)
             
@@ -123,11 +124,15 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # ==============================================
         # STAGE 3: LLM Pass 1 — ประเมินและให้คะแนน (BATCHING)
         # ==============================================
-        if len(groups) == 1:
+        # 🌟 ตัดให้เหลือแค่ 5 กลุ่มแรก (Top 5) ก่อนส่งให้ LLM ประเมิน
+        top_n_eval = 5
+        eval_groups = group_texts[:top_n_eval]
+        
+        if len(eval_groups) == 1:
             best_group_idx = 0
         else:
             prompts_list = []
-            for g_idx, g_text in enumerate(group_texts):
+            for g_idx, g_text in enumerate(eval_groups):
                 prompt = f"""You are a strict document evaluator for Thai parliamentary meeting records.
 [Query]: {query}
 
@@ -140,7 +145,7 @@ If it contains the actual substantive answer, score it HIGH (8-10).
 
 Give your reasoning and then a final score from 1 to 10."""
                 prompts_list.append(prompt)
-                
+            print([f"Query : {query} \nDEBUG (prompts_list) :{prompts_list} : " ])
             # ส่งเข้า vLLM รวดเดียวแบบ Async
             tasks = [llm_client.agenerate_structured(p, GroupEvaluation) for p in prompts_list]
             batch_results = await asyncio.gather(*tasks)
@@ -172,6 +177,7 @@ Here are the Top {len(top_3)} candidate groups of paragraphs:
 Which group number best and most directly answers the query?
 Select the exact group number (e.g. if you select 'GROUP 4', output 4).
 Give your reasoning and then the best_group_id."""
+                print(f"Query : {query} \nDEBUG (anchor_prompt) :{anchor_prompt} " )
                 try:
                     # รอผลลัพธ์จาก vLLM
                     anchor_result = await llm_client.agenerate_structured(anchor_prompt, AnchorSelection)
@@ -225,7 +231,7 @@ YOUR CURRENT TASK:
 {context_text_for_llm}
 ==================================================
 """
-    
+    print(f"Query : {query} \nDEBUG (prompt) :{prompt} " )
     try:
         filter_output = await llm_client.agenerate_structured(prompt, FinalFilterOutput)
         if filter_output:
@@ -244,8 +250,6 @@ YOUR CURRENT TASK:
         selected_refs = all_para_ids[:3]
         selected_context = "Fallback context"
     
-    print("[DEBUG] : " ,selected_context,"[refs] :",selected_refs)
-        
     return {
         "context": selected_context,
         "refs": selected_refs

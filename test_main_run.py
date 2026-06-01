@@ -1,6 +1,10 @@
 import argparse
 import json
 import os
+# สั่ง vLLM ให้หยุดความล้ำสมัย ปิด V1 Engine แล้วกลับไปใช้ V0 เหมือนยุค 0.7.3
+os.environ["VLLM_USE_V1"] = "0"
+# บังคับวิธีสร้าง Process ให้ไม่เกิด Error แดง
+os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 import asyncio
 import pandas as pd
 import time
@@ -13,27 +17,22 @@ import nest_asyncio
 nest_asyncio.apply()
 
 # ระบุ Absolute Path ตามที่กติกาการแข่งขันกำหนด
-#PROGRESS_LIB = "/benchmark_lib/progress"
-RESULT_CSV_PATH = "/result/submission.csv"
+PROGRESS_LIB = "/benchmark_lib/progress"
+RESULT_CSV_PATH = "/lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/result/submission.csv"
+default_data_path = "/lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/model/test/test.json"
 
 
-#def call_progress(i):
-#    """ฟังก์ชันเรียกใช้ progress ตามกติกาการแข่งขัน [cite: 431, 544]"""
-#    if os.path.exists(PROGRESS_LIB):
-#        os.system(f"{PROGRESS_LIB} {i}")
-#    else:
-#        print(
-#            f"[DEBUG] ไม่พบ {PROGRESS_LIB} (ข้ามการเรียก progress สำหรับรันเทสบน Local)"
-#        )
+def call_progress(i):
+    """ฟังก์ชันเรียกใช้ progress ตามกติกาการแข่งขัน"""
+    if os.path.exists(PROGRESS_LIB):
+        os.system(f"{PROGRESS_LIB} {i}")
 
 
 def initialize_system(json_path):
     print("--- SYSTEM INITIALIZATION ---")
     document_store.load_from_json(json_path)
 
-    print(
-        f"Generating embeddings for all documents... This might take a while on the first run."
-    )
+    print(f"Generating embeddings for all documents... This might take a while on the first run.")
     doc_count = len(document_store.texts)
 
     for i, (doc_id, paragraphs) in enumerate(document_store.texts.items(), 1):
@@ -60,32 +59,51 @@ def initialize_system(json_path):
             except Exception as e:
                 print(f"[WARN] Failed to encode embeddings for {doc_id}: {e}")
 
+        # 🌟 จุดที่ 1: ส่ง Heartbeat (0%) กระตุ้นระบบเป็นระยะช่วงที่ทำ Embedding
         if i % 10 == 0 or i == doc_count:
             print(f"Processed {i}/{doc_count} documents for embeddings.")
+            call_progress(0) 
 
     print("--- INITIALIZATION COMPLETE ---")
 
 
 async def process_single_query(inputs: dict, semaphore: asyncio.Semaphore):
-    """รัน 1 คำถาม ภายใต้การควบคุมของ Semaphore เพื่อป้องกัน VRAM เต็ม"""
+    """รัน 1 คำถาม ภายใต้การควบคุมของ Semaphore"""
     async with semaphore:
         print(f"🚀 เริ่มประมวลผล Query: {inputs['query_id']} (Doc: {inputs['doc_id']})")
         try:
             final_state = await app.ainvoke(inputs)
 
             print(f"✅ --- RESULT FOR {inputs['query_id']} ---")
+            print(f"   [QUERY] {inputs['query']}")
             print(f"   [ACTUAL REFS]  : {final_state.get('refs', [])}")
+            print(f"   [REFS USED] {final_state.get('used_refs', [])}")
             print(f"   [ABSTRACTIVE]  : {final_state.get('abstractive', '')[:50]}...")
             print(f"------------------------------------------\n")
 
             return {
                 "ID": inputs["query_id"],
                 "abstractive": final_state.get("abstractive", ""),
-                "refs": ",".join(final_state.get("refs", [])) if final_state.get("refs") else ""
+                "refs": (
+                    ",".join(final_state.get("used_refs", []))
+                    if final_state.get("used_refs")
+                    else ""
+                ),
             }
         except Exception as e:
             print(f"[ERROR] Pipeline failed on {inputs['query_id']}: {e}")
             return {"ID": inputs["query_id"], "abstractive": "Error", "refs": ""}
+
+
+# 🌟 จุดที่ 2: ฟังก์ชันสำหรับหุ้มงาน เพื่ออัปเดต Progress ทันทีที่แต่ละข้อทำเสร็จ
+async def task_wrapper(inputs: dict, semaphore: asyncio.Semaphore, progress_state: dict):
+    result = await process_single_query(inputs, semaphore)
+    
+    # นับจำนวนข้อที่เสร็จและเรียกหลอด Progress
+    progress_state["count"] += 1
+    call_progress(progress_state["count"])
+    
+    return result
 
 
 async def run_pipeline(json_path: str, concurrent_limit: int):
@@ -95,12 +113,11 @@ async def run_pipeline(json_path: str, concurrent_limit: int):
         dataset = json.load(f)
 
     queries = dataset.get("queries", [])
-    print(
-        f"\nพบ {len(queries)} คำถาม | ⚡ กำลังรันทีละ {concurrent_limit} ข้อพร้อมกัน..."
-    )
+    print(f"\nพบ {len(queries)} คำถาม | ⚡ กำลังรันทีละ {concurrent_limit} ข้อพร้อมกัน...")
 
     semaphore = asyncio.Semaphore(concurrent_limit)
-
+    progress_state = {"count": 0} # ตัวแปรส่วนกลางสำหรับนับยอด
+    
     tasks = []
     for q in queries:
         inputs = {
@@ -109,50 +126,40 @@ async def run_pipeline(json_path: str, concurrent_limit: int):
             "query": q["query"],
             "retry_count": 0,
         }
-        tasks.append(process_single_query(inputs, semaphore))
+        # 🌟 เรียกใช้ Wrapper แทนการเรียกตรงๆ
+        tasks.append(task_wrapper(inputs, semaphore, progress_state))
 
     results = await asyncio.gather(*tasks)
 
-    # สร้าง Directory ปลายทางไว้ก่อนเผื่อกรณีรันเทสบน Local
     os.makedirs(os.path.dirname(RESULT_CSV_PATH), exist_ok=True)
-
-    # บันทึกเป็น CSV (คอลัมน์ ID, abstractive, refs ตามกติกาเป๊ะๆ)
     df = pd.DataFrame(results)
-    
-    # บังคับลำดับคอลัมน์ (ID -> abstractive -> refs)
-    df = df[["ID", "abstractive", "refs"]]
-    
-    # 🚨 เปลี่ยน encoding จาก utf-8-sig เป็น utf-8 เฉยๆ เพื่อป้องกันบั๊ก BOM (\xef\xbb\xbf)
-    # 🚨 เพิ่ม lineterminator='\n' เพื่อป้องกันบั๊ก \r แอบติดไปกับคอลัมน์สุดท้าย (refs) เวลารันบน Windows
-    df.to_csv(RESULT_CSV_PATH, index=False, encoding="utf-8", lineterminator='\n')
+    df.to_csv(RESULT_CSV_PATH, index=False, encoding="utf-8", lineterminator="\n")
     print(f"\n--- 📝 บันทึกผลลัพธ์ลง {RESULT_CSV_PATH} สำเร็จ ({len(df)} รายการ) ---")
-
-    # เรียกใช้ /benchmark_lib/progress หลังจากจบกระบวนการเขียนไฟล์ทั้งหมด [cite: 431, 544]
-#    call_progress(len(queries))
+    
+    # เรียกครั้งสุดท้ายเพื่อความชัวร์
+    call_progress(len(queries))
 
 
 def main():
-    # หน่วงเวลา 10 วินาที เพื่อให้ระบบ Grafana+Loki ของผู้จัดดึง Log ได้ทัน
     print("⏳ หน่วงเวลา 10 วินาที เพื่อให้ระบบเก็บ Log (ตามคำแนะนำทีมงาน)...")
     time.sleep(10)
-
-    # ค่า Default ชี้ไปที่ Absolute Path ของไฟล์ทดสอบ
-    default_data_path = "/model/test/test.json"
+    
+    # 🌟 จุดที่ 3: เรียก Progress ทันทีตั้งแต่เริ่ม เพื่อต่ออายุ Watchdog ไม่ให้มันตัดจบ!
+    call_progress(0)
 
     parser = argparse.ArgumentParser(description="LANTA LLM Summarization")
     parser.add_argument(
         "--data", type=str, default=default_data_path, help="Path to JSON dataset"
     )
     parser.add_argument(
-        "--batch", type=int, default=10, help="จำนวน N ที่ต้องการรันพร้อมกัน"
+        "--batch", type=int, default=5, help="จำนวน N ที่ต้องการรันพร้อมกัน"
     )
     args = parser.parse_args()
 
     if not os.path.exists(args.data):
         print(f"[ERROR] Dataset not found: {args.data}")
-        sys.exit(1)  # โยน Exception เป็น 1 (ห้ามใช้ 0) หากเกิดข้อผิดพลาด
+        sys.exit(1)
 
-    # ครอบ try/except ตัวใหญ่สุดเพื่อจัดการ Error ที่อาจทำให้โปรแกรมหลุดแบบ exit 0
     try:
         asyncio.run(run_pipeline(args.data, args.batch))
     except Exception as e:
