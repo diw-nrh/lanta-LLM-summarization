@@ -69,7 +69,7 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
             for p_id, p_vecs in doc_embeddings.items():
                 vec_score = float(np.dot(q_vec, p_vecs))
                 bm25_score = bm25_scores.get(p_id, 0.0)
-                final_score = (vec_score * 0.7) + (bm25_score * 0.3)
+                final_score = (vec_score * 0.4) + (bm25_score * 0.6)
                 scores[p_id] = final_score
         
         if not scores:
@@ -78,7 +78,7 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 text_words = set(str(doc_texts[p_id]).split())
                 scores[p_id] = len(query_words & text_words)
         
-        top_k = 15
+        top_k = 20
         sorted_paras = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
         
         # ==============================================
