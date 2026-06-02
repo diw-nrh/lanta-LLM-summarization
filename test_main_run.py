@@ -16,6 +16,21 @@ import nest_asyncio
 
 nest_asyncio.apply()
 
+# ==============================================================================
+# 🚨 STRICT CUDA CHECK BEFORE RUNNING
+# ==============================================================================
+try:
+    import torch
+    if not torch.cuda.is_available():
+        print("[FATAL ERROR] ❌ CUDA is NOT available. This program requires a GPU to run.")
+        sys.exit(1)
+    
+    device_name = torch.cuda.get_device_name(0)
+    print(f"\n[INFO] ✅ CUDA is available and working properly. Using device: {device_name}\n")
+except Exception as e:
+    print(f"\n[FATAL ERROR] ❌ Failed to initialize CUDA: {e}")
+    sys.exit(1)
+# ==============================================================================
 # ระบุ Absolute Path ตามที่กติกาการแข่งขันกำหนด
 PROGRESS_LIB = "/benchmark_lib/progress"
 RESULT_CSV_PATH = "/lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/result/submission.csv"
