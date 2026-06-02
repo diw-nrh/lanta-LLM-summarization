@@ -63,5 +63,11 @@ class LLMClient:
             if response_text:
                 print(f"[DEBUG] Raw response that caused the error:\n{repr(response_text)}")
             return None
-# Global instance
-llm_client = LLMClient()
+# --- ใส่ไว้ล่างสุดของไฟล์ llm_clients.py ---
+_llm_client_instance = None
+
+def get_llm_client():
+    global _llm_client_instance
+    if _llm_client_instance is None:
+        _llm_client_instance = LLMClient()
+    return _llm_client_instance
