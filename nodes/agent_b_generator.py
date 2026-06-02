@@ -5,12 +5,11 @@ from .llm_clients import llm_client
 
 class GeneratorOutput(BaseModel):
     analysis: str = Field(description="Analyze the query and context")
-    pattern_matching: str = Field(description="Identify the query type to select the correct formatting pattern")
-    draft_content: str = Field(description="Extract the facts")
-    refinement: str = Field(description="Rewrite into full formal Thai sentence echoing the query subject")
-    numeral_and_entity_check: str = Field(description="Verify Arabic numerals and exact names")
-    abstractive: str = Field(description="The final formatted answer")
-    used_refs: List[str] = Field(description="List of paragraph IDs used")
+    draft_content: str = Field(description="Initial detailed answer based on context")
+    self_correction: str = Field(description="Check for hallucinations and completeness")
+    final_polish: str = Field(description="Ensure tone is formal and correct")
+    abstractive: str = Field(description="The primary selected answer (for fallback)")
+    used_refs: List[str] = Field(description="List of paragraph IDs (e.g., ['P1', 'P2']) that were actually used to write the abstractive answer. Extract these from the [P_ID] tags in the context.")
 
 async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- RUNNING AGENT B: GENERATOR ---")
@@ -53,6 +52,7 @@ YOUR CURRENT TASK:
         else:
             abstractive = "Fallback abstractive answer due to parse error."
             used_refs = []
+        print("[😍DEBUG] gen_output",gen_output)
     except Exception as e:
         print(f"[ERROR] Agent B Failed: {e}")
         abstractive = "Error during generation."

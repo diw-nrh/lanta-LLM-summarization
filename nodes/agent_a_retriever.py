@@ -6,8 +6,7 @@ import asyncio
 from .document_store import document_store
 from .embedder import embedder
 
-# 🌟 แก้ไข 1: ใช้ get_llm_client แทนการ import ตัวแปร global
-from .llm_clients import get_llm_client
+from .llm_clients import llm_client
 
 try:
     from rank_bm25 import BM25Okapi
@@ -147,10 +146,9 @@ If it contains the actual substantive answer, score it HIGH (8-10).
 
 Give your reasoning and then a final score from 1 to 10."""
                 prompts_list.append(prompt)
-            #print([f"Query : {query} \nDEBUG (prompts_list) :{prompts_list} : " ])
+            print([f"Query : {query} \nDEBUG (prompts_list) :{prompts_list} : " ])
             
-            # 🌟 แก้ไข 2: เรียกใช้ get_llm_client() แทนตัวแปร
-            tasks = [get_llm_client().agenerate_structured(p, GroupEvaluation) for p in prompts_list]
+            tasks = [llm_client.agenerate_structured(p, GroupEvaluation) for p in prompts_list]
             batch_results = await asyncio.gather(*tasks)
             
             eval_results = []
@@ -180,10 +178,9 @@ Here are the Top {len(top_3)} candidate groups of paragraphs:
 Which group number best and most directly answers the query?
 Select the exact group number (e.g. if you select 'GROUP 4', output 4).
 Give your reasoning and then the best_group_id."""
-                #print(f"Query : {query} \nDEBUG (anchor_prompt) :{anchor_prompt} " )
+                print(f"Query : {query} \nDEBUG (anchor_prompt) :{anchor_prompt} " )
                 try:
-                    # 🌟 แก้ไข 3: เรียกใช้ get_llm_client() แทนตัวแปร
-                    anchor_result = await get_llm_client().agenerate_structured(anchor_prompt, AnchorSelection)
+                    anchor_result = await llm_client.agenerate_structured(anchor_prompt, AnchorSelection)
                     if anchor_result:
                         best_group_idx = max(0, min(anchor_result.best_group_id - 1, len(groups) - 1))
                         if not any(r[0] == best_group_idx for r in top_3):
@@ -234,10 +231,9 @@ YOUR CURRENT TASK:
 {context_text_for_llm}
 ==================================================
 """
-    #print(f"Query : {query} \nDEBUG (prompt) :{prompt} " )
+    print(f"Query : {query} \nDEBUG (prompt) :{prompt} " )
     try:
-        # 🌟 แก้ไข 4: เรียกใช้ get_llm_client() แทนตัวแปร
-        filter_output = await get_llm_client().agenerate_structured(prompt, FinalFilterOutput)
+        filter_output = await llm_client.agenerate_structured(prompt, FinalFilterOutput)
         if filter_output:
             selected_refs = filter_output.selected_refs
             selected_lines = []

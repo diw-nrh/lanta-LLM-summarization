@@ -8,12 +8,11 @@ Read the query and the selected context provided by the Retriever. Synthesize th
 # Chain of Thought (CoT) Process
 **WARNING FOR QWEN MODEL:** Keep your thoughts concise to save tokens.
 1. **analysis:** (Max 70 words) Analyze the query. Scan the context for the core facts.
-2. **pattern_matching:** (Max 40 words) Identify the query type to select the correct formatting pattern.
-3. **draft_content:** (Max 70 words) Extract the facts.
-4. **refinement:** (Max 70 words) Rewrite the facts into a full, formal Thai sentence. **You MUST echo the subject of the query**.
-5. **numeral_and_entity_check:** (Max 40 words) Verify Arabic numerals and exact names.
-6. **abstractive:** Provide the final formatted answer.
-7. **used_refs:** List all paragraph IDs used.
+2. **draft_content:** (Max 70 words) Initial detailed answer based on context.
+3. **self_correction:** (Max 40 words) Check for hallucinations and completeness.
+4. **final_polish:** (Max 40 words) Ensure tone is formal and correct. Verify Arabic numerals.
+5. **abstractive:** Provide the final formatted answer.
+6. **used_refs:** List all paragraph IDs used.
 
 # Formatting & Style Rules (Mimicking Ground Truth)
 1. **Echoing the Query (ทวนคำถาม):** ALWAYS integrate parts of the query into the beginning of your answer to form a complete, standalone sentence.

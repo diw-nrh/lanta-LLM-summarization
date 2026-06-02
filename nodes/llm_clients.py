@@ -34,7 +34,7 @@ class LLMClient:
         # เปิดใช้งาน guided_json บังคับโครงสร้าง
         sampling_params = SamplingParams(
             temperature=temperature,
-            max_tokens=8192,
+            max_tokens=10240,
             guided_decoding=GuidedDecodingParams(json=json.dumps(schema_json))
         )
         
@@ -64,10 +64,11 @@ class LLMClient:
                 print(f"[DEBUG] Raw response that caused the error:\n{repr(response_text)}")
             return None
 # --- ใส่ไว้ล่างสุดของไฟล์ llm_clients.py ---
-_llm_client_instance = None
+#_llm_client_instance = None
 
-def get_llm_client():
-    global _llm_client_instance
-    if _llm_client_instance is None:
-        _llm_client_instance = LLMClient()
-    return _llm_client_instance
+#def get_llm_client():
+ #   global _llm_client_instance
+  #  if _llm_client_instance is None:
+   #     _llm_client_instance = LLMClient()
+    #return _llm_client_instance
+llm_client=LLMClient()
