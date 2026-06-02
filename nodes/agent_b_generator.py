@@ -4,12 +4,13 @@ import os
 from .llm_clients import llm_client
 
 class GeneratorOutput(BaseModel):
-    analysis: str = Field(description="Analyze the query and context")
-    draft_content: str = Field(description="Initial detailed answer based on context")
-    self_correction: str = Field(description="Check for hallucinations and completeness")
-    final_polish: str = Field(description="Ensure tone is formal and correct")
-    abstractive: str = Field(description="The primary selected answer (for fallback)")
-    used_refs: List[str] = Field(description="List of paragraph IDs (e.g., ['P1', 'P2']) that were actually used to write the abstractive answer. Extract these from the [P_ID] tags in the context.")
+    analysis: str = Field(description="Analyze the query. Scan the context for the core facts.")
+    pattern_matching: str = Field(description="Identify the query type to select the correct formatting pattern (Entity, Time/Location, List, Summary, or Resolution).")
+    draft_content: str = Field(description="Extract the facts.")
+    refinement: str = Field(description="Rewrite the facts into a full, formal Thai sentence. You MUST echo the subject of the query to form a complete sentence.")
+    numeral_and_entity_check: str = Field(description="Verify that ALL numbers are converted to Arabic numerals. Verify that NO personal names are masked; use the exact names.")
+    abstractive: str = Field(description="Provide the final formatted answer.")
+    used_refs: List[str] = Field(description="List all paragraph IDs used.")
 
 async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- RUNNING AGENT B: GENERATOR ---")
