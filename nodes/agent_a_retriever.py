@@ -78,7 +78,7 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
         for p_id, p_vecs in doc_embeddings.items():
             vec_score = float(np.dot(q_vec, p_vecs))
             bm25_score = bm25_scores.get(p_id, 0.0)
-            final_score = (vec_score * 0.7) + (bm25_score * 0.3)
+            final_score = (vec_score * 0.5) + (bm25_score * 0.5)
             scores[p_id] = final_score
     
     if not scores:
@@ -116,8 +116,8 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     group_texts = []
     for g_idx, group in enumerate(groups):
-        min_idx = max(0, min(item[0] for item in group) - 3)
-        max_idx = min(len(all_para_ids) - 1, max(item[0] for item in group) + 4)
+        min_idx = max(0, min(item[0] for item in group) - 1)
+        max_idx = min(len(all_para_ids) - 1, max(item[0] for item in group) + 2)
         
         lines = []
         for idx in range(min_idx, max_idx + 1):
@@ -129,7 +129,7 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # ==============================================
     # STAGE 3: สกัดหา Paragraph ที่ใช่ (Extract Refs) ด้วย CoT
     # ==============================================
-    top_n_eval = 15
+    top_n_eval = 5
     eval_groups = group_texts[:top_n_eval]
     
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -202,8 +202,8 @@ TASK (Step-by-Step Elimination):
     anchor_result = None 
     
     if not valid_groups:
-        print("[WARN] ไม่มีกลุ่มไหนมีคำตอบเลย (All Zeros/Ones) -> ใช้ Fallback จาก Vector Search")
-        final_refs = [p_id for p_id, score in sorted_paras[:3]]
+        print("[WARN] ไม่มีกลุ่มไหนมีคำตอบเลย -> ลองสุ่มมโน 1 Paragraph ที่คะแนน Vector สูงสุด")
+        final_refs = [p_id for p_id, score in sorted_paras[:1]]
     elif len(valid_groups) == 1:
         print("[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที")
         final_refs = valid_groups[0]["refs"]
@@ -252,7 +252,7 @@ Perform a step-by-step evaluation (Chain of Thought):
     for p_id in final_refs:
         if p_id in doc_texts:
             selected_lines.append(f"[{p_id}]: {doc_texts[p_id]}")
-    selected_context = "\n".join(selected_lines) if selected_lines else "ไม่พบข้อมูลที่ต้องการ"
+    selected_context = "\n".join(selected_lines) if selected_lines else "ไม่พบข้อมูล"
 
     print(f"✅ Final Refs Selected: {final_refs}")
     
