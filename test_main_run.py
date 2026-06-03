@@ -36,7 +36,6 @@ PROGRESS_LIB = "/benchmark_lib/progress"
 RESULT_CSV_PATH = "/lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/result/submission.csv"
 default_data_path = "/lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/model/test/test.json"
 
-
 def call_progress(i):
     """ฟังก์ชันเรียกใช้ progress ตามกติกาการแข่งขัน"""
     if os.path.exists(PROGRESS_LIB):
@@ -86,28 +85,28 @@ async def process_single_query(inputs: dict, semaphore: asyncio.Semaphore):
     """รัน 1 คำถาม ภายใต้การควบคุมของ Semaphore"""
     async with semaphore:
         print(f"🚀 เริ่มประมวลผล Query: {inputs['query_id']} (Doc: {inputs['doc_id']})")
-        try:
-            final_state = await app.ainvoke(inputs)
+#        try:
+        final_state = await app.ainvoke(inputs)
 
-            print(f"✅ --- RESULT FOR {inputs['query_id']} ---")
-            print(f"   [QUERY] {inputs['query']}")
-            print(f"   [ACTUAL REFS]  : {final_state.get('refs', [])}")
-            print(f"   [REFS USED] {final_state.get('used_refs', [])}")
-            print(f"   [ABSTRACTIVE]  : {final_state.get('abstractive', '')[:50]}...")
-            print(f"------------------------------------------\n")
+        print(f"✅ --- RESULT FOR {inputs['query_id']} ---")
+        print(f"   [QUERY] {inputs['query']}")
+        print(f"   [ACTUAL REFS]  : {final_state.get('refs', [])}")
+        print(f"   [REFS USED] {final_state.get('used_refs', [])}")
+        print(f"   [ABSTRACTIVE]  : {final_state.get('abstractive', '')[:50]}...")
+        print(f"------------------------------------------\n")
 
-            return {
-                "ID": inputs["query_id"],
-                "abstractive": final_state.get("abstractive", ""),
-                "refs": (
-                    ",".join(final_state.get("used_refs", []))
-                    if final_state.get("used_refs")
-                    else ""
-                ),
-            }
-        except Exception as e:
-            print(f"[ERROR] Pipeline failed on {inputs['query_id']}: {e}")
-            return {"ID": inputs["query_id"], "abstractive": "Error", "refs": ""}
+        return {
+            "ID": inputs["query_id"],
+            "abstractive": final_state.get("abstractive", ""),
+            "refs": (
+                ",".join(final_state.get("used_refs", []))
+                if final_state.get("used_refs")
+                else ""
+            ),
+        }
+#        except Exception as e:
+#            print(f"[ERROR] Pipeline failed on {inputs['query_id']}: {e}")
+#            return {"ID": inputs["query_id"], "abstractive": "Error", "refs": ""}
 
 
 # 🌟 จุดที่ 2: ฟังก์ชันสำหรับหุ้มงาน เพื่ออัปเดต Progress ทันทีที่แต่ละข้อทำเสร็จ
@@ -167,7 +166,7 @@ def main():
         "--data", type=str, default=default_data_path, help="Path to JSON dataset"
     )
     parser.add_argument(
-        "--batch", type=int, default=5, help="จำนวน N ที่ต้องการรันพร้อมกัน"
+        "--batch", type=int, default=50, help="จำนวน N ที่ต้องการรันพร้อมกัน"
     )
     args = parser.parse_args()
 

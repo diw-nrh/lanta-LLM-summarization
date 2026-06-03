@@ -34,8 +34,13 @@ class LLMClient:
         # เปิดใช้งาน guided_json บังคับโครงสร้าง
         sampling_params = SamplingParams(
             temperature=temperature,
-            max_tokens=8192,
-            guided_decoding=GuidedDecodingParams(json=json.dumps(schema_json))
+            max_tokens=10240,  # ✅ 1. ลดลงมา! งานนี้ใช้ไม่เกิน 1500 Token แน่นอน (ช่วยให้มันตัดจบทันทีถ้ารวน)
+            stop=["<|im_end|>", "<|endoftext|>"], # ✅ 2. บังคับใส่เบรกฉุกเฉินให้ Qwen (ถ้าเจอคำนี้คือหยุดทันที)
+            repetition_penalty=1.05,
+            guided_decoding=GuidedDecodingParams(
+                json=json.dumps(schema_json),
+                backend="outlines" # ✅ 4. ลองเปลี่ยน backend เป็น outlines (มักจะมีปัญหากับ Qwen น้อยกว่า xgrammar)
+            )
         )
         
         request_id = str(uuid.uuid4())
@@ -64,10 +69,11 @@ class LLMClient:
                 print(f"[DEBUG] Raw response that caused the error:\n{repr(response_text)}")
             return None
 # --- ใส่ไว้ล่างสุดของไฟล์ llm_clients.py ---
-_llm_client_instance = None
+#_llm_client_instance = None
 
-def get_llm_client():
-    global _llm_client_instance
-    if _llm_client_instance is None:
-        _llm_client_instance = LLMClient()
-    return _llm_client_instance
+#def get_llm_client():
+ #   global _llm_client_instance
+  #  if _llm_client_instance is None:
+   #     _llm_client_instance = LLMClient()
+    #return _llm_client_instance
+llm_client=LLMClient()
