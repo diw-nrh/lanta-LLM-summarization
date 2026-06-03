@@ -1,0 +1,466 @@
+Initializing Local Embeddings...
+--- 🚀 Local Embedder Initialized! ---
+INFO 06-03 02:22:30 [__init__.py:235] Automatically detected platform cuda.
+Initializing vLLM AsyncEngine (In-Process)...
+`torch_dtype` is deprecated! Use `dtype` instead!
+INFO 06-03 02:22:42 [config.py:1604] Using max model len 32768
+WARNING 06-03 02:22:43 [cuda.py:103] To see benefits of async output processing, enable CUDA graph. Since, enforce-eager is enabled, async output processor cannot be used
+INFO 06-03 02:22:43 [llm_engine.py:228] Initializing a V0 LLM engine (v0.10.0) with config: model='/lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/models/Qwen3-8B', speculative_config=None, tokenizer='/lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/models/Qwen3-8B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, override_neuron_config={}, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=32768, download_dir=None, load_format=LoadFormat.AUTO, tensor_parallel_size=1, pipeline_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, kv_cache_dtype=auto,  device_config=cuda, decoding_config=DecodingConfig(backend='xgrammar', disable_fallback=False, disable_any_whitespace=False, disable_additional_properties=False, reasoning_backend=''), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None), seed=None, served_model_name=/lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/models/Qwen3-8B, num_scheduler_steps=1, multi_step_stream_outputs=True, enable_prefix_caching=None, chunked_prefill_enabled=False, use_async_output_proc=False, pooler_config=None, compilation_config={"level":0,"debug_dump_path":"","cache_dir":"","backend":"","custom_ops":[],"splitting_ops":[],"use_inductor":true,"compile_sizes":[],"inductor_compile_config":{"enable_auto_functionalized_v2":false},"inductor_passes":{},"use_cudagraph":false,"cudagraph_num_of_warmups":0,"cudagraph_capture_sizes":[],"cudagraph_copy_inputs":false,"full_cuda_graph":false,"max_capture_size":0,"local_cache_dir":null}, use_cached_outputs=False, 
+INFO 06-03 02:22:45 [cuda.py:398] Using Flash Attention backend.
+INFO 06-03 02:22:45 [parallel_state.py:1102] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, TP rank 0, EP rank 0
+INFO 06-03 02:22:45 [model_runner.py:1083] Starting to load model /lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/models/Qwen3-8B...
+Loading safetensors checkpoint shards: 100% Completed | 5/5 [00:08<00:00,  1.73s/it]
+INFO 06-03 02:22:54 [default_loader.py:262] Loading weights took 8.39 seconds
+INFO 06-03 02:22:55 [model_runner.py:1115] Model loading took 15.2683 GiB and 8.512828 seconds
+INFO 06-03 02:22:57 [worker.py:295] Memory profiling takes 2.35 seconds
+INFO 06-03 02:22:57 [worker.py:295] the current vLLM instance can use total_gpu_memory (39.50GiB) x gpu_memory_utilization (0.80) = 31.60GiB
+INFO 06-03 02:22:57 [worker.py:295] model weights take 15.27GiB; non_torch_memory takes 0.09GiB; PyTorch activation peak memory takes 3.26GiB; the rest of the memory reserved for KV Cache is 12.98GiB.
+INFO 06-03 02:22:57 [executor_base.py:113] # cuda blocks: 5906, # CPU blocks: 1820
+INFO 06-03 02:22:57 [executor_base.py:118] Maximum concurrency for 32768 tokens per request: 2.88x
+INFO 06-03 02:23:00 [llm_engine.py:424] init engine (profile, create kv cache, warmup model) took 5.62 seconds
+--- 🚀 Local vLLM Engine Initialized! ---
+
+[INFO] ✅ CUDA is available and working properly. Using device: NVIDIA A100-SXM4-40GB
+
+⏳ หน่วงเวลา 10 วินาที เพื่อให้ระบบเก็บ Log (ตามคำแนะนำทีมงาน)...
+--- SYSTEM INITIALIZATION ---
+Loading data from /lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/model/test/test.json...
+[SUCCESS] Loaded 1 documents into DocumentStore.
+Generating embeddings for all documents... This might take a while on the first run.
+Processed 1/1 documents for embeddings.
+--- INITIALIZATION COMPLETE ---
+
+พบ 15 คำถาม | ⚡ กำลังรันทีละ 50 ข้อพร้อมกัน...
+🚀 เริ่มประมวลผล Query: Q0001 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0002 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0003 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0004 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0005 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0006 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0007 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0008 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0009 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0010 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0011 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0012 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0013 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0014 (Doc: doc_001)
+🚀 เริ่มประมวลผล Query: Q0015 (Doc: doc_001)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+--- RUNNING AGENT A: RETRIEVER (Precision Extractor + CoT Scoring) ---
+[INFO] Stage 1: Hybrid Search (bge-m3 + BM25)
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 99fef664-7b25-415d-87e0-5b5f0c1fba72.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 7a32ba59-5b8e-4908-9b59-4ae1cb73b12e.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request d8d6c028-01ba-4cb2-8601-bbe80b50075a.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request a2f33b21-6d0b-4328-93e9-ca08c2e9eba2.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request ebb99f29-2bf4-45f4-9c48-81f533c7f4da.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request ef30a0c7-a56a-474d-b302-6e40fc4f9270.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request e9d51425-a9d7-4915-bd5e-883b83d0beaf.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 4175d1a7-5b62-433c-bb91-b56d2d6e38f6.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 4d57ec5c-870b-448c-a650-b2d3dc1ad6a1.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request c7fecdae-a2dd-42ff-a5fc-a1845bbe0bbf.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 7bff63aa-8db1-4238-a3ce-3b3715564702.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 6a430b7d-5f3c-48f3-a4af-19182026c0fc.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 4075cc3d-ac35-4415-ab5b-59d8c8dc14c8.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request cfeafd25-c1a1-4c9f-b6dc-83591446147c.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 60fd4d16-f887-40d4-8f2f-a98626da78e5.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 9a9a6d81-c951-4656-9cd2-9edfb859c01f.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request e2ab6994-4323-45c5-abae-a5d63423736e.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 30a54f84-c13c-4c1b-a481-cf063d8344ce.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request acbced0f-c470-423e-be06-c1456b1ccecf.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 16e05bea-ade8-4679-987a-5134480bd68a.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request c655454f-d391-41ca-b289-0d860aaca4fd.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request bea87608-b9fc-4949-b2f5-3629d4b8c9ca.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 0e7a705f-0776-4521-a21d-d9a1169018a8.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 99a2711a-14b8-465c-9428-8894e9399f81.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 86bde229-ba53-4564-b573-871fd98444fd.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 31a126d6-6e8f-4366-9fde-fabd77d54d8a.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request c08b7297-7a40-421c-a01d-4fb5f1761586.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 3abc8799-de84-4f32-bd9c-0016a26b03f4.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request d092fe17-3668-4997-82b0-81d29d4bc0cb.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request dba114ee-acb2-4938-9f78-1bdb7102b7ff.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 70b47c8e-44cd-4d35-bc85-3ff3cca7b95f.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 2f093a30-0b3e-4769-93f4-342e67724a5f.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request da020fce-f936-46b7-8875-f5a8ec6d6367.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request c3004439-1cdf-4551-921f-5555c4e6fc5e.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 65be36ae-71de-4cf1-ac26-c68a6ed2af1c.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 8b050258-6e98-4062-8893-51cbc279d2ba.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 1c3e4e62-4ce3-4d4a-8104-f1a3005d8360.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 866a0a41-1e71-4cd2-a6d3-413453905af9.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 31ab7926-bdd9-4f6d-8d8e-05dd10cc4117.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 98130807-85be-4956-ad6f-3102c7b88192.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request a927b460-e001-462e-9acf-dcc3ed9a11fa.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 201b4a27-1e92-40f8-87eb-5cdbe722cc89.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request cb654318-0649-485b-bd5f-ac50f3fce8e5.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 2f2b3413-63ba-4047-8809-502a98439c41.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 0f98257b-2248-40f5-a3a6-2e412fb75fe7.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request c81f79af-1bae-42b8-89db-ea403f092ff0.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 416de1be-ef11-4551-bfbe-5965c113b77c.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 54866960-b904-47c7-8b46-c1d2dcc37a69.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 51c1ad45-78f3-43dc-af35-60144e33102c.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 4373110b-da17-44bd-b4a7-38cc2ad16765.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 0e0a2d3d-7b8a-43d6-b379-bbcfc77d1391.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request d1d367cc-ddf4-4243-aebc-d25ef4fd0629.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 753064b5-743c-4b16-9910-fa10f7430b19.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 789165c9-af1e-4ae5-b776-cc0ac2508159.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 1dd5d83a-bf31-4be3-937b-6f0656216e88.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request a20afc13-f623-4c91-a9ad-2d1b899d1cdf.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request c21d1ec8-eb90-4b83-a9f1-655c5affb914.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request cd5e4cef-adf3-4c73-bf23-0ed32c98cb19.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request a97d86b8-a891-4bcf-9a12-0d8b95dab4f0.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 3defe996-95d0-47a2-a887-b4aa339e3429.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 7ab30a99-98ab-48b2-aecd-31403e221708.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request bcb7d634-6d38-499d-8736-9de21b916e9a.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request dd6e3c5c-8c95-4ed9-8759-c61c6e2defb6.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request e0b0e69e-99bb-4f49-8048-8075cbf75488.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 4ad6d76a-afbb-4929-8c27-c9475a1dbbca.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request 41b99a03-d308-4e72-9679-2238847f2f8e.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request ec1a9efa-0e1a-4eb5-8826-127774c0d25b.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request bfb130ea-2e3f-4dd8-89d4-9e56b304e85d.
+INFO 06-03 02:23:12 [async_llm_engine.py:209] Added request c12000c9-fca0-4bcc-a094-198c2bf200b9.
+INFO 06-03 02:23:19 [metrics.py:386] Avg prompt throughput: 1608.9 tokens/s, Avg generation throughput: 0.5 tokens/s, Running: 10 reqs, Swapped: 0 reqs, Pending: 59 reqs, GPU KV cache usage: 32.8%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:23:24 [metrics.py:386] Avg prompt throughput: 12368.9 tokens/s, Avg generation throughput: 160.1 tokens/s, Running: 28 reqs, Swapped: 0 reqs, Pending: 41 reqs, GPU KV cache usage: 99.3%, CPU KV cache usage: 0.0%.
+WARNING 06-03 02:23:25 [scheduler.py:1822] Sequence group 3abc8799-de84-4f32-bd9c-0016a26b03f4 is preempted by PreemptionMode.RECOMPUTE mode because there is not enough KV cache space. This can affect the end-to-end performance. Increase gpu_memory_utilization or tensor_parallel_size to provide more KV cache memory. total_num_cumulative_preemption=1
+INFO 06-03 02:23:29 [metrics.py:386] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 839.0 tokens/s, Running: 26 reqs, Swapped: 0 reqs, Pending: 43 reqs, GPU KV cache usage: 96.6%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:23:30 [async_llm_engine.py:177] Finished request d8d6c028-01ba-4cb2-8601-bbe80b50075a.
+INFO 06-03 02:23:30 [async_llm_engine.py:177] Finished request 4d57ec5c-870b-448c-a650-b2d3dc1ad6a1.
+INFO 06-03 02:23:32 [async_llm_engine.py:177] Finished request 31a126d6-6e8f-4366-9fde-fabd77d54d8a.
+INFO 06-03 02:23:33 [async_llm_engine.py:177] Finished request 4175d1a7-5b62-433c-bb91-b56d2d6e38f6.
+INFO 06-03 02:23:33 [async_llm_engine.py:177] Finished request 99fef664-7b25-415d-87e0-5b5f0c1fba72.
+INFO 06-03 02:23:33 [async_llm_engine.py:177] Finished request c08b7297-7a40-421c-a01d-4fb5f1761586.
+INFO 06-03 02:23:34 [async_llm_engine.py:177] Finished request c655454f-d391-41ca-b289-0d860aaca4fd.
+INFO 06-03 02:23:34 [async_llm_engine.py:177] Finished request ef30a0c7-a56a-474d-b302-6e40fc4f9270.
+INFO 06-03 02:23:34 [async_llm_engine.py:177] Finished request acbced0f-c470-423e-be06-c1456b1ccecf.
+INFO 06-03 02:23:35 [metrics.py:386] Avg prompt throughput: 5499.8 tokens/s, Avg generation throughput: 504.4 tokens/s, Running: 26 reqs, Swapped: 0 reqs, Pending: 34 reqs, GPU KV cache usage: 98.3%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:23:35 [async_llm_engine.py:177] Finished request 86bde229-ba53-4564-b573-871fd98444fd.
+INFO 06-03 02:23:35 [async_llm_engine.py:177] Finished request 9a9a6d81-c951-4656-9cd2-9edfb859c01f.
+INFO 06-03 02:23:36 [async_llm_engine.py:177] Finished request a2f33b21-6d0b-4328-93e9-ca08c2e9eba2.
+INFO 06-03 02:23:37 [async_llm_engine.py:177] Finished request 0e7a705f-0776-4521-a21d-d9a1169018a8.
+INFO 06-03 02:23:37 [async_llm_engine.py:177] Finished request 4075cc3d-ac35-4415-ab5b-59d8c8dc14c8.
+INFO 06-03 02:23:37 [async_llm_engine.py:177] Finished request e2ab6994-4323-45c5-abae-a5d63423736e.
+INFO 06-03 02:23:38 [async_llm_engine.py:177] Finished request 16e05bea-ade8-4679-987a-5134480bd68a.
+INFO 06-03 02:23:39 [async_llm_engine.py:177] Finished request 6a430b7d-5f3c-48f3-a4af-19182026c0fc.
+INFO 06-03 02:23:40 [metrics.py:386] Avg prompt throughput: 4876.5 tokens/s, Avg generation throughput: 526.2 tokens/s, Running: 25 reqs, Swapped: 0 reqs, Pending: 27 reqs, GPU KV cache usage: 98.3%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:23:40 [async_llm_engine.py:177] Finished request cfeafd25-c1a1-4c9f-b6dc-83591446147c.
+INFO 06-03 02:23:40 [async_llm_engine.py:177] Finished request c7fecdae-a2dd-42ff-a5fc-a1845bbe0bbf.
+INFO 06-03 02:23:41 [async_llm_engine.py:177] Finished request ebb99f29-2bf4-45f4-9c48-81f533c7f4da.
+INFO 06-03 02:23:41 [async_llm_engine.py:177] Finished request 99a2711a-14b8-465c-9428-8894e9399f81.
+INFO 06-03 02:23:42 [async_llm_engine.py:177] Finished request 60fd4d16-f887-40d4-8f2f-a98626da78e5.
+Query : ที่ประชุมพิจารณาให้ยุติเรื่อง ร้องทุกข์ เร่งด่วน เดือดร้อนจากการรับแจ้งแนวเวนคืน กรมทางหลวง เนื่องจากเหตุใด 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P65', 'P66']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:23:42 [async_llm_engine.py:209] Added request 6398f6eb-e50c-4133-9d3e-7ab6668ffb30.
+INFO 06-03 02:23:43 [async_llm_engine.py:177] Finished request bea87608-b9fc-4949-b2f5-3629d4b8c9ca.
+Query : รายละเอียดของการทำหนังสือขออนุเคราะห์ข้อมูลเพื่อประกอบการศึกษาของคณะอนุกรรมาธิการศึกษาการปฏิรูปกระบวนการยุติธรรมและสิทธิมนุษยชน มีอะไรบ้าง 
+DEBUG (Found groups with score 3) : 2
+[INFO] มีเข้าชิง 2 กลุ่ม -> ส่งให้ LLM ฟันธง
+INFO 06-03 02:23:43 [async_llm_engine.py:209] Added request cc96e46a-72b8-4a4d-81b5-2e4fd73dd9ba.
+INFO 06-03 02:23:43 [async_llm_engine.py:177] Finished request e9d51425-a9d7-4915-bd5e-883b83d0beaf.
+Query : ในระเบียบวาระที่ 1 เรื่องที่ประธานแจ้งต่อที่ประชุมคือเรื่องใด 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P48', 'P49']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:23:43 [async_llm_engine.py:209] Added request f683e6b6-dc39-4178-b659-778b645ad516.
+INFO 06-03 02:23:44 [async_llm_engine.py:177] Finished request 3abc8799-de84-4f32-bd9c-0016a26b03f4.
+INFO 06-03 02:23:45 [metrics.py:386] Avg prompt throughput: 5329.3 tokens/s, Avg generation throughput: 430.9 tokens/s, Running: 25 reqs, Swapped: 0 reqs, Pending: 22 reqs, GPU KV cache usage: 96.6%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:23:45 [async_llm_engine.py:177] Finished request 7a32ba59-5b8e-4908-9b59-4ae1cb73b12e.
+Query : การประชุมกฎหมายครั้งที่ 29 จัดการประชุมที่สถานที่ใด 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P5']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:23:45 [async_llm_engine.py:209] Added request 19f629cf-259f-43e9-85aa-b9a7543caa24.
+INFO 06-03 02:23:46 [async_llm_engine.py:177] Finished request dba114ee-acb2-4938-9f78-1bdb7102b7ff.
+INFO 06-03 02:23:48 [async_llm_engine.py:177] Finished request 30a54f84-c13c-4c1b-a481-cf063d8344ce.
+Query : ที่ประชุมมีความเห็นอย่างไรกับเรื่องร้องเรียนเลขที่ ๒๑/๖๗ ลงวันที่ ๓๑ มกราคม ๒๕๖๗ และ ๓๘/๖๗ ลงวันที่ ๒๙ กุมภาพันธ์ ๒๕๖๗ 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P59']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:23:48 [async_llm_engine.py:209] Added request 8ffe2452-faab-4601-a778-21f1706b1a80.
+INFO 06-03 02:23:49 [async_llm_engine.py:177] Finished request 70b47c8e-44cd-4d35-bc85-3ff3cca7b95f.
+INFO 06-03 02:23:49 [async_llm_engine.py:177] Finished request d092fe17-3668-4997-82b0-81d29d4bc0cb.
+Query : บุคคลใดที่พ้นจากตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรูป ทบทวน และแก้ไขปรับปรุงกฎหมาย 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P95']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:23:49 [async_llm_engine.py:209] Added request bd6263a4-f391-4556-9edb-500316987364.
+INFO 06-03 02:23:50 [metrics.py:386] Avg prompt throughput: 3702.4 tokens/s, Avg generation throughput: 564.1 tokens/s, Running: 26 reqs, Swapped: 0 reqs, Pending: 19 reqs, GPU KV cache usage: 97.3%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:23:51 [async_llm_engine.py:177] Finished request 7bff63aa-8db1-4238-a3ce-3b3715564702.
+Query : ในระเบียบวาระที่ 4 เรื่องพิจารณากลั่นกรองเรื่องที่ประชาชนเสนอให้คณะกรรมาธิการศึกษาแก้ไขปัญหา คณะกรรมาธิการได้ให้ข้อเสนอแนะอย่างไร 
+DEBUG (No score 3 found. Using score 2 fallback) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P57']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:23:51 [async_llm_engine.py:209] Added request 3fde1719-ec61-4e6d-a445-dd455bdad5f4.
+INFO 06-03 02:23:51 [async_llm_engine.py:177] Finished request 866a0a41-1e71-4cd2-a6d3-413453905af9.
+INFO 06-03 02:23:52 [async_llm_engine.py:177] Finished request da020fce-f936-46b7-8875-f5a8ec6d6367.
+INFO 06-03 02:23:52 [async_llm_engine.py:177] Finished request cb654318-0649-485b-bd5f-ac50f3fce8e5.
+INFO 06-03 02:23:53 [async_llm_engine.py:177] Finished request c3004439-1cdf-4551-921f-5555c4e6fc5e.
+INFO 06-03 02:23:54 [async_llm_engine.py:177] Finished request 65be36ae-71de-4cf1-ac26-c68a6ed2af1c.
+INFO 06-03 02:23:54 [async_llm_engine.py:177] Finished request 201b4a27-1e92-40f8-87eb-5cdbe722cc89.
+INFO 06-03 02:23:55 [metrics.py:386] Avg prompt throughput: 4425.5 tokens/s, Avg generation throughput: 564.5 tokens/s, Running: 26 reqs, Swapped: 0 reqs, Pending: 13 reqs, GPU KV cache usage: 98.0%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:23:55 [async_llm_engine.py:177] Finished request 2f093a30-0b3e-4769-93f4-342e67724a5f.
+Query : ตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรูป ทบทวน และแก้ไขปรับปรุงกฎหมาย (เพิ่มเติม) มีจำนวนกี่ท่าน และมีท่านใดบ้าง 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P94', 'P95', 'P96', 'P97', 'P98', 'P99', 'P100']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:23:55 [async_llm_engine.py:209] Added request abe9cede-8a0a-4484-b3c0-3fc7547c0a85.
+INFO 06-03 02:23:56 [async_llm_engine.py:177] Finished request 2f2b3413-63ba-4047-8809-502a98439c41.
+INFO 06-03 02:23:57 [async_llm_engine.py:177] Finished request d1d367cc-ddf4-4243-aebc-d25ef4fd0629.
+INFO 06-03 02:23:58 [async_llm_engine.py:177] Finished request 416de1be-ef11-4551-bfbe-5965c113b77c.
+INFO 06-03 02:23:58 [async_llm_engine.py:177] Finished request 0e0a2d3d-7b8a-43d6-b379-bbcfc77d1391.
+INFO 06-03 02:23:58 [async_llm_engine.py:177] Finished request 789165c9-af1e-4ae5-b776-cc0ac2508159.
+INFO 06-03 02:23:59 [async_llm_engine.py:177] Finished request 1dd5d83a-bf31-4be3-937b-6f0656216e88.
+INFO 06-03 02:23:59 [async_llm_engine.py:177] Finished request 0f98257b-2248-40f5-a3a6-2e412fb75fe7.
+INFO 06-03 02:24:00 [metrics.py:386] Avg prompt throughput: 4861.5 tokens/s, Avg generation throughput: 544.5 tokens/s, Running: 27 reqs, Swapped: 0 reqs, Pending: 5 reqs, GPU KV cache usage: 98.0%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:24:00 [async_llm_engine.py:177] Finished request c81f79af-1bae-42b8-89db-ea403f092ff0.
+Query : นายนิวัติไชย เกษมมงคล เลขาธิการคณะกรรมการ ป.ป.ช. กับพวกรวม ๑๐ คน ถูกร้องเรียนเรื่องใด 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P77']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:24:00 [async_llm_engine.py:209] Added request 9191f2f2-17fc-4679-81e3-c3131dcdaed7.
+INFO 06-03 02:24:00 [async_llm_engine.py:177] Finished request 8b050258-6e98-4062-8893-51cbc279d2ba.
+INFO 06-03 02:24:01 [async_llm_engine.py:177] Finished request 98130807-85be-4956-ad6f-3102c7b88192.
+INFO 06-03 02:24:02 [async_llm_engine.py:177] Finished request 31ab7926-bdd9-4f6d-8d8e-05dd10cc4117.
+INFO 06-03 02:24:02 [async_llm_engine.py:177] Finished request 4373110b-da17-44bd-b4a7-38cc2ad16765.
+INFO 06-03 02:24:03 [async_llm_engine.py:177] Finished request 1c3e4e62-4ce3-4d4a-8104-f1a3005d8360.
+INFO 06-03 02:24:03 [async_llm_engine.py:177] Finished request 753064b5-743c-4b16-9910-fa10f7430b19.
+Query : ตั้งแต่วันที่เท่าไหร่ ที่ คณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎรมีมติแต่งตั้งนางสาวอณัศยา ปลื้มจิตร เป็นคณะทำงานพิจารณาศึกษา และกลั่นกรองเรื่องร้องเรียน 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P102', 'P103', 'P104']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:24:03 [async_llm_engine.py:209] Added request 9f6023a8-7915-40c9-800c-c639d6de9a73.
+INFO 06-03 02:24:04 [async_llm_engine.py:177] Finished request a927b460-e001-462e-9acf-dcc3ed9a11fa.
+Query : ตามหนังสือเลขที่ ๕๔/๖๗ ลงวันที่ ๒๒ เมษายน ๒๕๖๗ คณะกรรมาธิการกฎหมายรัฐสภาถูกขอให้พิจารณาเรื่องใด 
+DEBUG (Found groups with score 3) : 2
+[INFO] มีเข้าชิง 2 กลุ่ม -> ส่งให้ LLM ฟันธง
+INFO 06-03 02:24:04 [async_llm_engine.py:209] Added request 57ccba72-13df-4cb4-94d3-7021bc85fa0b.
+INFO 06-03 02:24:04 [async_llm_engine.py:177] Finished request 57ccba72-13df-4cb4-94d3-7021bc85fa0b.
+Query : ตามหนังสือเลขที่ ๕๔/๖๗ ลงวันที่ ๒๒ เมษายน ๒๕๖๗ คณะกรรมาธิการกฎหมายรัฐสภาถูกขอให้พิจารณาเรื่องใด 
+DEBUG (anchor_result) : analysis='...' best_group_idx=3
+✅ Final Refs Selected: ['P85']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:24:04 [async_llm_engine.py:209] Added request d14225a0-c4d7-47aa-9db7-8ca792ede1be.
+INFO 06-03 02:24:04 [async_llm_engine.py:177] Finished request cd5e4cef-adf3-4c73-bf23-0ed32c98cb19.
+INFO 06-03 02:24:05 [async_llm_engine.py:177] Finished request a20afc13-f623-4c91-a9ad-2d1b899d1cdf.
+INFO 06-03 02:24:05 [metrics.py:386] Avg prompt throughput: 3726.1 tokens/s, Avg generation throughput: 601.4 tokens/s, Running: 25 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 79.1%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:24:05 [async_llm_engine.py:177] Finished request cc96e46a-72b8-4a4d-81b5-2e4fd73dd9ba.
+Query : รายละเอียดของการทำหนังสือขออนุเคราะห์ข้อมูลเพื่อประกอบการศึกษาของคณะอนุกรรมาธิการศึกษาการปฏิรูปกระบวนการยุติธรรมและสิทธิมนุษยชน มีอะไรบ้าง 
+DEBUG (anchor_result) : analysis='GROUP 2 provides specific details about the letters sent by the committee, including numbers, dates, and subjects. However, these letters seem to be related to specific issues like unpaid debts and Muslim prisoners, not directly about data collection for research. GROUP 4 provides more direct information about the process of sending letters to request data for research, including the specific institutions involved (Bank of Thailand and Office of the Judiciary) and the purpose of the data collection. Therefore, GROUP 4 is more relevant and comprehensive.' best_group_idx=4
+✅ Final Refs Selected: ['P105', 'P106', 'P107', 'P108']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:24:05 [async_llm_engine.py:209] Added request e8658474-673f-4cb9-8211-696a7d34bedd.
+INFO 06-03 02:24:07 [async_llm_engine.py:177] Finished request 51c1ad45-78f3-43dc-af35-60144e33102c.
+INFO 06-03 02:24:07 [async_llm_engine.py:177] Finished request ec1a9efa-0e1a-4eb5-8826-127774c0d25b.
+INFO 06-03 02:24:07 [async_llm_engine.py:177] Finished request 54866960-b904-47c7-8b46-c1d2dcc37a69.
+INFO 06-03 02:24:07 [async_llm_engine.py:177] Finished request 3defe996-95d0-47a2-a887-b4aa339e3429.
+Query : เรื่องร้องเรียนเลขที่ ๔๖/๖๗ ลงวันที่ ๑๔ มีนาคม ๒๕๖๗ เป็นเรื่องเกี่ยวกับอะไร 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P75']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:24:07 [async_llm_engine.py:209] Added request f0cba210-a46d-4899-af98-3d66042fb15f.
+INFO 06-03 02:24:08 [async_llm_engine.py:177] Finished request 7ab30a99-98ab-48b2-aecd-31403e221708.
+INFO 06-03 02:24:08 [async_llm_engine.py:177] Finished request 4ad6d76a-afbb-4929-8c27-c9475a1dbbca.
+INFO 06-03 02:24:08 [async_llm_engine.py:177] Finished request c12000c9-fca0-4bcc-a094-198c2bf200b9.
+INFO 06-03 02:24:09 [async_llm_engine.py:177] Finished request a97d86b8-a891-4bcf-9a12-0d8b95dab4f0.
+INFO 06-03 02:24:09 [async_llm_engine.py:177] Finished request 41b99a03-d308-4e72-9679-2238847f2f8e.
+INFO 06-03 02:24:10 [metrics.py:386] Avg prompt throughput: 934.2 tokens/s, Avg generation throughput: 681.5 tokens/s, Running: 17 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 49.6%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:24:10 [async_llm_engine.py:177] Finished request bcb7d634-6d38-499d-8736-9de21b916e9a.
+INFO 06-03 02:24:10 [async_llm_engine.py:177] Finished request 19f629cf-259f-43e9-85aa-b9a7543caa24.
+[😍DEBUG] gen_output analysis="The query asks about the location of the 29th legal committee meeting. The context provides the exact location as 'ห้องประชุมกรรมาธิการ N 404 ชั้น ๔ อาคารรัฐสภา'." pattern_matching='Pattern 2: The Time & Location Pattern' draft_content='การประชุมกฎหมายครั้งที่ 29 จัดการประชุมที่ ห้องประชุมกรรมาธิการ N 404 ชั้น ๔ อาคารรัฐสภา' refinement='การประชุมกฎหมายครั้งที่ 29 จัดการประชุมที่ ห้องประชุมกรรมาธิการ N 404 ชั้น ๔ อาคารรัฐสภา' numeral_and_entity_check='Converted Thai numerals to Arabic numerals: ๔ → 4' abstractive='การประชุมกฎหมายครั้งที่ 29 จัดการประชุมที่ ห้องประชุมกรรมาธิการ N 404 ชั้น 4 อาคารรัฐสภา' used_refs=['P5']
+✅ --- RESULT FOR Q0001 ---
+   [QUERY] การประชุมกฎหมายครั้งที่ 29 จัดการประชุมที่สถานที่ใด
+   [ACTUAL REFS]  : ['P5']
+   [REFS USED] ['P5']
+   [ABSTRACTIVE]  : การประชุมกฎหมายครั้งที่ 29 จัดการประชุมที่ ห้องประ...
+------------------------------------------
+
+INFO 06-03 02:24:10 [async_llm_engine.py:177] Finished request f683e6b6-dc39-4178-b659-778b645ad516.
+[😍DEBUG] gen_output analysis='The query asks about the matters notified by the chairperson under agenda item 1. The context mentions that the committee submitted a report on prison overcrowding, relocation of prisons outside urban areas, and improving prison management within prisons across the country, which was included in the agenda of the House of Representatives meeting.' pattern_matching='Pattern 3' draft_content='การประชุมภายใต้ระเบียบวาระที่ 1 ประธานแจ้ง 4 เรื่องสำคัญ ได้แก่...' refinement='การประชุมภายใต้ระเบียบวาระที่ 1 ประธานแจ้ง 4 เรื่องสำคัญ ได้แก่' numeral_and_entity_check='All numbers are in Arabic numerals. No personal names are masked.' abstractive='ในระเบียบวาระที่ 1 เรื่องที่ประธานแจ้งต่อที่ประชุมคือเรื่อง ปัญหานักโทษล้นเรือนจำ แนวทางการย้ายเรือนจำออกจากเขตชุมชนเมือง และการปรับปรุงการบริหารงานราชทัณฑ์ภายในเรือนจำทั่วประเทศให้มีสภาพที่เหมาะสม' used_refs=['P48', 'P49']
+✅ --- RESULT FOR Q0002 ---
+   [QUERY] ในระเบียบวาระที่ 1 เรื่องที่ประธานแจ้งต่อที่ประชุมคือเรื่องใด
+   [ACTUAL REFS]  : ['P48', 'P49']
+   [REFS USED] ['P48', 'P49']
+   [ABSTRACTIVE]  : ในระเบียบวาระที่ 1 เรื่องที่ประธานแจ้งต่อที่ประชุม...
+------------------------------------------
+
+INFO 06-03 02:24:11 [async_llm_engine.py:177] Finished request e0b0e69e-99bb-4f49-8048-8075cbf75488.
+INFO 06-03 02:24:11 [async_llm_engine.py:177] Finished request dd6e3c5c-8c95-4ed9-8759-c61c6e2defb6.
+Query : ในการประชุมครั้งต่อไปของคณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร ต้องเชิญผู้ใดมาให้ข้อมูลต่อคณะกรรมาธิการฯ ในฐานะผู้เกี่ยวข้อง 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P110', 'P111', 'P112']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:24:11 [async_llm_engine.py:209] Added request 38de5751-e600-405a-9e00-85f82d8cf45f.
+INFO 06-03 02:24:12 [async_llm_engine.py:177] Finished request c21d1ec8-eb90-4b83-a9f1-655c5affb914.
+Query : การประชุมครั้งที่ 29 ของคณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร สิ้นสุดเวลาใด 
+DEBUG (No score 3 found. Using score 2 fallback) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P121']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:24:12 [async_llm_engine.py:209] Added request 4e282b29-f4c7-4a99-bf8a-1b12493f5166.
+INFO 06-03 02:24:12 [async_llm_engine.py:177] Finished request bd6263a4-f391-4556-9edb-500316987364.
+[😍DEBUG] gen_output analysis='The query asks for the person who has left the position of consultant for the committee on legal reform, review, and amendment. The context states that Ms. Wutthana Bunnaek has been removed from the position because she resigned.' pattern_matching='Pattern 1' draft_content='นางสาววทันยา บุนนาค พ้นจากตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรูป ทบทวน และแก้ไขปรับปรุงกฎหมาย เพราะว่าเธอได้ลาออกจากตำแหน่ง' refinement='นางสาววทันยา บุนนาค พ้นจากตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรูป ทบทวน และแก้ไขปรับปรุงกฎหมาย เพราะว่าเธอได้ลาออกจากตำแหน่ง' numeral_and_entity_check='All numbers are in Thai script, but since they are not relevant to the query, no conversion is needed. Personal names are correctly identified.' abstractive='บุคคลที่พ้นจากตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรูป ทบทวน และแก้ไขปรับปรุงกฎหมาย คือ นางสาววทันยา บุนนาค เพราะว่าเธอได้ลาออกจากตำแหน่ง' used_refs=['P95']
+✅ --- RESULT FOR Q0007 ---
+   [QUERY] บุคคลใดที่พ้นจากตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรูป ทบทวน และแก้ไขปรับปรุงกฎหมาย
+   [ACTUAL REFS]  : ['P95']
+   [REFS USED] ['P95']
+   [ABSTRACTIVE]  : บุคคลที่พ้นจากตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิกา...
+------------------------------------------
+
+INFO 06-03 02:24:13 [async_llm_engine.py:177] Finished request bfb130ea-2e3f-4dd8-89d4-9e56b304e85d.
+Query : กำหนดการประชุมคณะกรรมาธิการครั้งต่อไป วันที่เท่าไหร่ เวลาเท่าใด 
+DEBUG (Found groups with score 3) : 1
+[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที
+✅ Final Refs Selected: ['P110']
+--- RUNNING AGENT B: GENERATOR ---
+INFO 06-03 02:24:13 [async_llm_engine.py:209] Added request f2222e58-4670-4ba4-a040-9807d6399c02.
+INFO 06-03 02:24:14 [async_llm_engine.py:177] Finished request 9f6023a8-7915-40c9-800c-c639d6de9a73.
+[😍DEBUG] gen_output analysis='The query asks for the start date when the committee appointed Ms. Anasaya Pluemjit as the working group to examine and review complaints. The context provides the date in P104.' pattern_matching='Pattern 2: The Time & Location Pattern' draft_content='ตั้งแต่วันที่ 14 สิงหาคม 2567' refinement='ตั้งแต่วันที่ 14 สิงหาคม 2567 คณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร มีมติแต่งตั้งนางสาวอณัศยา ปลื้มจิตร เป็นคณะทำงานพิจารณาศึกษา และกลั่นกรองเรื่องร้องเรียน' numeral_and_entity_check='All numbers are converted to Arabic numerals. Names are correctly spelled.' abstractive='ตั้งแต่วันที่ 14 สิงหาคม 2567 คณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร มีมติแต่งตั้งนางสาวอณัศยา ปลื้มจิตร เป็นคณะทำงานพิจารณาศึกษา และกลั่นกรองเรื่องร้องเรียน' used_refs=['P104']
+✅ --- RESULT FOR Q0009 ---
+   [QUERY] ตั้งแต่วันที่เท่าไหร่ ที่ คณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎรมีมติแต่งตั้งนางสาวอณัศยา ปลื้มจิตร เป็นคณะทำงานพิจารณาศึกษา และกลั่นกรองเรื่องร้องเรียน
+   [ACTUAL REFS]  : ['P102', 'P103', 'P104']
+   [REFS USED] ['P104']
+   [ABSTRACTIVE]  : ตั้งแต่วันที่ 14 สิงหาคม 2567 คณะกรรมาธิการการกฎหม...
+------------------------------------------
+
+INFO 06-03 02:24:14 [async_llm_engine.py:177] Finished request 8ffe2452-faab-4601-a778-21f1706b1a80.
+[😍DEBUG] gen_output analysis="The query asks about the committee's opinion on two complaints numbered 21/67 dated January 31, 2567, and 38/67 dated February 29, 2567. The context mentions these complaints but does not provide details on the committee's stance." pattern_matching='Pattern 1' draft_content='ที่ประชุมมีความเห็นว่า...' refinement='ที่ประชุมมีความเห็นว่า เลขที่ ๒๑/๖๗ ลงวันที่ ๓๑ มกราคม ๒๕ๆ๗ และ ๓๘/๖็ ลงวันที่ ๒๙ กุมภาพันธ์ ๒๕ๆ๗ เรื่อง ขอความอนุเคราะห์ดำเนินการในส่วนที่เกี่ยวข้อง (การกล่าวอ้างเรื่องการค้างจ่ายเงินให้บริษัทเอกชน)' numeral_and_entity_check='Converted Thai numerals to Arabic numerals. Verified entity names and dates.' abstractive='ที่ประชุมมีความเห็นว่า เลขที่ ๒๑/๖๗ ลงวันที่ ๓๑ มกราคม ๒๕๖๗ และ ๓๘/๖๗ ลงวันที่ ๒๙ กุมภาพันธ์ ๒๕๖๗ เรื่อง ขอความอนุเคราะห์ดำเนินการในส่วนที่เกี่ยวข้อง (การกล่าวอ้างเรื่องการค้างจ่ายเงินให้บริษัทเอกชน)' used_refs=['P59']
+✅ --- RESULT FOR Q0005 ---
+   [QUERY] ที่ประชุมมีความเห็นอย่างไรกับเรื่องร้องเรียนเลขที่ ๒๑/๖๗ ลงวันที่ ๓๑ มกราคม ๒๕๖๗ และ ๓๘/๖๗ ลงวันที่ ๒๙ กุมภาพันธ์ ๒๕๖๗
+   [ACTUAL REFS]  : ['P59']
+   [REFS USED] ['P59']
+   [ABSTRACTIVE]  : ที่ประชุมมีความเห็นว่า เลขที่ 21/67 ลงวันที่ 31 มก...
+------------------------------------------
+
+INFO 06-03 02:24:14 [async_llm_engine.py:177] Finished request d14225a0-c4d7-47aa-9db7-8ca792ede1be.
+[😍DEBUG] gen_output analysis='The query asks about the matter referred to the parliamentary legal committee in document number 54/67 dated April 22, 2567. The context mentions the request for the committee to provide legal opinions.' pattern_matching='Pattern 1' draft_content='ตามหนังสือเลขที่ ๕๔/๖๗ ลงวันที่ ๒๒ เมษายน ๒๕๖๗ คณะกรรมาธิการกฎหมายรัฐสภาถูกขอให้พิจารณาให้ความเห็นทางกฎหมาย' refinement='ตามหนังสือเลขที่ ๕๔/๖๗ ลงวันที่ ๒๒ เมษายน ๒๕๖๗ คณะกรรมาธิการกฎหมายรัฐสภาถูกขอให้พิจารณาให้ความเห็นทางกฎหมาย' numeral_and_entity_check="All numbers are converted to Arabic numerals. The entity 'คณะกรรมาธิการกฎหมายรัฐสภา' is correctly identified." abstractive='ตามหนังสือเลขที่ 54/67 ลงวันที่ 22 เมษายน 2567 คณะกรรมาธิการกฎหมายรัฐสภาถูกขอให้พิจารณาให้ความเห็นทางกฎหมาย' used_refs=['P85']
+✅ --- RESULT FOR Q0010 ---
+   [QUERY] ตามหนังสือเลขที่ ๕๔/๖๗ ลงวันที่ ๒๒ เมษายน ๒๕๖๗ คณะกรรมาธิการกฎหมายรัฐสภาถูกขอให้พิจารณาเรื่องใด
+   [ACTUAL REFS]  : ['P85']
+   [REFS USED] ['P85']
+   [ABSTRACTIVE]  : ตามหนังสือเลขที่ 54/67 ลงวันที่ 22 เมษายน 2567 คณะ...
+------------------------------------------
+
+INFO 06-03 02:24:15 [async_llm_engine.py:177] Finished request 3fde1719-ec61-4e6d-a445-dd455bdad5f4.
+[😍DEBUG] gen_output analysis="The query asks about the recommendations provided by the committee regarding the public's proposed issues under agenda item 4. The context mentions that Mr. Prayut Siripanich, the committee advisor, gave recommendations about the investigation process not being considered as delegating authority." pattern_matching='Pattern 3' draft_content='คณะกรรมาธิการได้ให้ข้อเสนอแนะว่า การดำเนินการศึกษาเรื่องร้องเรียนอาจไม่เข้าข่ายการสอบหาข้อเท็จจริงที่เป็นการมอบอำนาจหรือมอบหมายให้บุคคลกระทำการแทน' refinement='ในระเบียบวาระที่ 4 เรื่องพิจารณากลั่นกรองเรื่องที่ประชาชนเสนอให้คณะกรรมาธิการศึกษาแก้ไขปัญหา คณะกรรมาธิการได้ให้ข้อเสนอแนะว่า การดำเนินการศึกษาเรื่องร้องเรียนอาจไม่เข้าข่ายการสอบหาข้อเท็จจริงที่เป็นการมอบอำนาจหรือมอบหมายให้บุคคลกระทำการแทน' numeral_and_entity_check='All numbers are in Arabic numerals. Names are correctly spelled.' abstractive='ในระเบียบวาระที่ 4 เรื่องพิจารณากลั่นกรองเรื่องที่ประชาชนเสนอให้คณะกรรมาธิการศึกษาแก้ไขปัญหา คณะกรรมาธิการได้ให้ข้อเสนอแนะว่า การดำเนินการศึกษาเรื่องร้องเรียนอาจไม่เข้าข่ายการสอบหาข้อเท็จจริงที่เป็นการมอบอำนาจหรือมอบหมายให้บุคคลกระทำการแทน' used_refs=['P57']
+✅ --- RESULT FOR Q0003 ---
+   [QUERY] ในระเบียบวาระที่ 4 เรื่องพิจารณากลั่นกรองเรื่องที่ประชาชนเสนอให้คณะกรรมาธิการศึกษาแก้ไขปัญหา คณะกรรมาธิการได้ให้ข้อเสนอแนะอย่างไร
+   [ACTUAL REFS]  : ['P57']
+   [REFS USED] ['P57']
+   [ABSTRACTIVE]  : ในระเบียบวาระที่ 4 เรื่องพิจารณากลั่นกรองเรื่องที่...
+------------------------------------------
+
+INFO 06-03 02:24:15 [async_llm_engine.py:177] Finished request 9191f2f2-17fc-4679-81e3-c3131dcdaed7.
+[😍DEBUG] gen_output analysis='The query asks about the specific complaint against Mr. Nuwatchai Khammongkol, the Ombudsman, and his team of 10 people. The context mentions a complaint related to illegal land transfer by a businessman leading to eviction lawsuits against residents.' pattern_matching='Pattern 1' draft_content='นายนิวัติไชย เกษมมงคล เลขาธิการคณะกรรมการ ป.ป.ช. กับพวกรวม ๑๐ คน ถูกร้องเรียนเรื่อง ขอร้องเรียนถูกนายทุนออกโฉนดโดยไม่ชอบ ซึ่งนำมาโดนฟ้องขับไล่ทำให้ชาวบ้านเดือดร้อน' refinement='นายนิวัติไชย เกษมมงคล เลขาธิการคณะกรรมการ ป.ป.ช. กับพวกรวม ๑๐ คน ถูกร้องเรียนเรื่อง ขอร้องเรียนถูกนายทุนออกโฉนดโดยไม่ชอบ ซึ่งนำมาโดนฟ้องขับไล่ทำให้ชาวบ้านเดือดร้อน' numeral_and_entity_check='All numbers are converted to Arabic numerals where necessary. Names and titles are preserved exactly as given.' abstractive='นายนิวัติไชย เกษมมงคล เลขาธิการคณะกรรมการ ป.ป.ช. กับพวกรวม ๑๐ คน ถูกร้องเรียนเรื่อง ขอร้องเรียนถูกนายทุนออกโฉนดโดยไม่ชอบ ซึ่งนำมาโดนฟ้องขับไล่ทำให้ชาวบ้านเดือดร้อน' used_refs=['P77']
+✅ --- RESULT FOR Q0011 ---
+   [QUERY] นายนิวัติไชย เกษมมงคล เลขาธิการคณะกรรมการ ป.ป.ช. กับพวกรวม ๑๐ คน ถูกร้องเรียนเรื่องใด
+   [ACTUAL REFS]  : ['P77']
+   [REFS USED] ['P77']
+   [ABSTRACTIVE]  : นายนิวัติไชย เกษมมงคล เลขาธิการคณะกรรมการ ป.ป.ช. ก...
+------------------------------------------
+
+INFO 06-03 02:24:15 [metrics.py:386] Avg prompt throughput: 1315.5 tokens/s, Avg generation throughput: 440.9 tokens/s, Running: 7 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 18.7%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:24:17 [async_llm_engine.py:177] Finished request abe9cede-8a0a-4484-b3c0-3fc7547c0a85.
+[😍DEBUG] gen_output analysis='The query asks about the number of consultants and their names for the additional advisory committee on legal reform, review, and amendment. The context provides the number (4) and names of the four individuals.' pattern_matching='Pattern 3: The Strict Arabic List Pattern' draft_content='ตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรูป ทบทวน และแก้ไขปรับปรุงกฎหมาย (เพิ่มเติม) มีจำนวน 4 ท่าน ได้แก่ 1. นางสาวมิรา เวฬุภาค 2. นายสรัช สินธุประมา 3. นายสันติ ศิริธีราเจษฎ์ 4. นายนครธรรม ประเสริฐศิลป์' refinement='ตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรูป ทบทวน และแก้ไขปรับปรุงกฎหมาย (เพิ่มเติม) มีจำนวน 4 ท่าน ได้แก่ 1. นางสาวมิรา เวฬุภาค 2. นายสรัช สินธุประมา 3. นายสันติ ศิริธีราเจษฎ์ 4. นายนครธรรม ประเสริฐศิลป์' numeral_and_entity_check='All numbers are converted to Arabic numerals. Names are correctly spelled as per the context.' abstractive='ตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรูป ทบทวน และแก้ไขปรับปรุงกฎหมาย (เพิ่มเติม) มีจำนวน 4 ท่าน ได้แก่ 1. นางสาวมิรา เวฬุภาค 2. นายสรัช สินธุประมา 3. นายสันติ ศิริธีราเจษฎ์ 4. นายนครธรรม ประเสริฐศิลป์' used_refs=['P94', 'P95', 'P96', 'P97', 'P98', 'P99', 'P100']
+✅ --- RESULT FOR Q0008 ---
+   [QUERY] ตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรูป ทบทวน และแก้ไขปรับปรุงกฎหมาย (เพิ่มเติม) มีจำนวนกี่ท่าน และมีท่านใดบ้าง
+   [ACTUAL REFS]  : ['P94', 'P95', 'P96', 'P97', 'P98', 'P99', 'P100']
+   [REFS USED] ['P94', 'P95', 'P96', 'P97', 'P98', 'P99', 'P100']
+   [ABSTRACTIVE]  : ตำแหน่งที่ปรึกษาประจำคณะอนุกรรมาธิการศึกษาการปฏิรู...
+------------------------------------------
+
+INFO 06-03 02:24:17 [async_llm_engine.py:177] Finished request 6398f6eb-e50c-4133-9d3e-7ab6668ffb30.
+[😍DEBUG] gen_output analysis='The query asks why the meeting decided to terminate the urgent complaint case regarding the notification of land expropriation by the Department of Highways. The context states that the meeting decided to terminate it because the matter was not within the jurisdiction and authority under the regulations of the House of Representatives.' pattern_matching='Pattern 1' draft_content='ที่ประชุมพิจารณาให้ยุติเรื่องร้องทุกข์เร่งด่วน เดือดร้อนจากการรับแจ้งแนวเวนคืน กรมทางหลวง เนื่องจากเรื่องดังกล่าวไม่อยู่หน้าที่และอำนาจตามข้อบังคับการประชุมสภาผู้แทนราษฎร พ.ศ. 2562 และเห็นควรส่งเรื่องดังกล่าวให้แก่คณะกรรมาธิการการคมนาคมพิจารณาตามหน้าที่และอำนาจต่อไป' refinement='ที่ประชุมพิจารณาให้ยุติเรื่องร้องทุกข์เร่งด่วน เดือดร้อนจากการรับแจ้งแนวเวนคืน กรมทางหลวง เนื่องจากเรื่องดังกล่าวไม่อยู่หน้าที่และอำนาจตามข้อบังคับการประชุมสภาผู้แทนราษฎร พ.ศ. 2562 และเห็นควรส่งเรื่องดังกล่าวให้แก่คณะกรรมาธิการการคมนาคมพิจารณาตามหน้าที่และอำนาจต่อไป' numeral_and_entity_check='All numbers are converted to Arabic numerals. Names and entities are correctly identified.' abstractive='ที่ประชุมพิจารณาให้ยุติเรื่องร้องทุกข์เร่งด่วน เดือดร้อนจากการรับแจ้งแนวเวนคืน กรมทางหลวง เนื่องจากเรื่องดังกล่าวไม่อยู่หน้าที่และอำนาจตามข้อบังคับการประชุมสภาผู้แทนราษฎร พ.ศ. 2562 และเห็นควรส่งเรื่องดังกล่าวให้แก่คณะกรรมาธิการการคมนาคมพิจารณาตามหน้าที่และอำนาจต่อไป' used_refs=['P65', 'P66']
+✅ --- RESULT FOR Q0004 ---
+   [QUERY] ที่ประชุมพิจารณาให้ยุติเรื่อง ร้องทุกข์ เร่งด่วน เดือดร้อนจากการรับแจ้งแนวเวนคืน กรมทางหลวง เนื่องจากเหตุใด
+   [ACTUAL REFS]  : ['P65', 'P66']
+   [REFS USED] ['P65', 'P66']
+   [ABSTRACTIVE]  : ที่ประชุมพิจารณาให้ยุติเรื่องร้องทุกข์เร่งด่วน เดื...
+------------------------------------------
+
+INFO 06-03 02:24:19 [async_llm_engine.py:177] Finished request 4e282b29-f4c7-4a99-bf8a-1b12493f5166.
+[😍DEBUG] gen_output analysis='The query asks about the end time of the 29th meeting of the Committee on Legal Affairs, Justice, and Human Rights in the House of Representatives. The context mentions the date of the 29th meeting but does not specify the end time.' pattern_matching='Pattern 1' draft_content='การประชุมครั้งที่ 29 ของคณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร สิ้นสุดเวลาใด เพราะว่า...' refinement='การประชุมครั้งที่ 29 ของคณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร สิ้นสุดเวลาใด เพราะว่าบริบทไม่ได้ระบุเวลาที่ชัดเจน' numeral_and_entity_check='All numbers are converted to Arabic numerals. No personal names are masked.' abstractive='การประชุมครั้งที่ 29 ของคณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร สิ้นสุดเวลาใด เพราะว่าบริบทไม่ได้ระบุเวลาที่ชัดเจน' used_refs=['P121']
+✅ --- RESULT FOR Q0013 ---
+   [QUERY] การประชุมครั้งที่ 29 ของคณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร สิ้นสุดเวลาใด
+   [ACTUAL REFS]  : ['P121']
+   [REFS USED] ['P121']
+   [ABSTRACTIVE]  : การประชุมครั้งที่ 29 ของคณะกรรมาธิการการกฎหมาย การ...
+------------------------------------------
+
+INFO 06-03 02:24:20 [metrics.py:386] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 279.3 tokens/s, Running: 4 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 11.5%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:24:21 [async_llm_engine.py:177] Finished request 38de5751-e600-405a-9e00-85f82d8cf45f.
+[😍DEBUG] gen_output analysis='The query asks who will be invited to provide information to the committee in the next meeting. The context mentions two individuals: the Minister of Justice and the Director General of Police.' pattern_matching='Pattern 3' draft_content='ในการประชุมครั้งต่อไปของคณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร จะเชิญ ปลัดกระทรวงยุติธรรม และ ผู้บัญชาการตำรวจแห่งชาติ มาให้ข้อมูลต่อคณะกรรมาธิการฯ ในฐานะผู้เกี่ยวข้อง' refinement='ในการประชุมครั้งต่อไปของคณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร จะเชิญ ปลัดกระทรวงยุติธรรม และ ผู้บัญชาการตำรวจแห่งชาติ มาให้ข้อมูลต่อคณะกรรมาธิการฯ ในฐานะผู้เกี่ยวข้อง' numeral_and_entity_check='All entities are correctly named and numbers are in Arabic numerals.' abstractive='ในการประชุมครั้งต่อไปของคณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร จะเชิญ ปลัดกระทรวงยุติธรรม และ ผู้บัญชาการตำรวจแห่งชาติ มาให้ข้อมูลต่อคณะกรรมาธิการฯ ในฐานะผู้เกี่ยวข้อง' used_refs=['P110', 'P111', 'P112']
+✅ --- RESULT FOR Q0014 ---
+   [QUERY] ในการประชุมครั้งต่อไปของคณะกรรมาธิการการกฎหมาย การยุติธรรมและสิทธิมนุษยชน สภาผู้แทนราษฎร ต้องเชิญผู้ใดมาให้ข้อมูลต่อคณะกรรมาธิการฯ ในฐานะผู้เกี่ยวข้อง
+   [ACTUAL REFS]  : ['P110', 'P111', 'P112']
+   [REFS USED] ['P110', 'P111', 'P112']
+   [ABSTRACTIVE]  : ในการประชุมครั้งต่อไปของคณะกรรมาธิการการกฎหมาย การ...
+------------------------------------------
+
+INFO 06-03 02:24:21 [async_llm_engine.py:177] Finished request f0cba210-a46d-4899-af98-3d66042fb15f.
+[😍DEBUG] gen_output analysis='The query asks about the content of complaint number 46/67 dated March 14, 2567. The context provides the specific details of this complaint.' pattern_matching='Pattern 1' draft_content='เรื่องร้องเรียนเลขที่ ๔๖/๖๗ ลงวันที่ ๑ไ มีนาคม ๒๕๖๗ เป็นเรื่องเกี่ยวกับการขอให้สอบข้อเท็จจริง ค้นหาพยานหลักฐานทั้งปวงที่เกี่ยวข้องกับการบังคับให้สูญหาย กรณีนายชัชชาญ บุปผาวัลย์ หรือสหายภูชนะ ที่ประเทศลาว เมื่อปี ๒๕๖๑' refinement='เรื่องร้องเรียนเลขที่ ๔๖/๖๗ ลงวันที่ ๑ไ มีนาคม ๒๕๖๗ เป็นเรื่องเกี่ยวกับการขอให้สอบข้อเท็จจริง ค้นหาพยานหลักฐานทั้งปวงที่เกี่ยวข้องกับการบังคับให้สูญหาย กรณีนายชัชชาญ บุปผาวัลย์ หรือสหายภูชนะ ที่ประเทศลาว เมื่อปี ๒๕๖๑' numeral_and_entity_check="All numbers are in Thai script, but they should be converted to Arabic numerals. However, since the query uses Thai numerals, it's acceptable to maintain them in the answer." abstractive='เรื่องร้องเรียนเลขที่ ๔๖/๖๗ ลงวันที่ ๑ไ มีนาคม ๒๕๖๗ เป็นเรื่องเกี่ยวกับการขอให้สอบข้อเท็จจริง ค้นหาพยานหลักฐานทั้งปวงที่เกี่ยวข้องกับการบังคับให้สูญหาย กรณีนายชัชชาญ บุปผาวัลย์ หรือสหายภูชนะ ที่ประเทศลาว เมื่อปี ๒๕ๆ๑' used_refs=['P75']
+✅ --- RESULT FOR Q0012 ---
+   [QUERY] เรื่องร้องเรียนเลขที่ ๔๖/๖๗ ลงวันที่ ๑๔ มีนาคม ๒๕๖๗ เป็นเรื่องเกี่ยวกับอะไร
+   [ACTUAL REFS]  : ['P75']
+   [REFS USED] ['P75']
+   [ABSTRACTIVE]  : เรื่องร้องเรียนเลขที่ 46/67 ลงวันที่ 1ไ มีนาคม 256...
+------------------------------------------
+
+INFO 06-03 02:24:22 [async_llm_engine.py:177] Finished request e8658474-673f-4cb9-8211-696a7d34bedd.
+[😍DEBUG] gen_output analysis="The query asks for details about the letter requesting data for the subcommittee's study on judicial reform and human rights. The context provides three specific details about the letter." pattern_matching='Pattern 3' draft_content='รายละเอียดของการทำหนังสือขออนุเคราะห์ข้อมูลเพื่อประกอบการศึกษาของคณะอนุกรรมาธิการศึกษาการปฏิรูปกระบวนการยุติธรรมและสิทธิมนุษยชน มี 3 เรื่อง ได้แก่' refinement='รายละเอียดของการทำหนังสือขออนุเคราะห์ข้อมูลเพื่อประกอบการศึกษาของคณะอนุกรรมาธิการศึกษาการปฏิรูปกระบวนการยุติธรรมและสิทธิมนุษยชน มี 3 เรื่อง ได้แก่' numeral_and_entity_check='All numbers are in Arabic numerals. Names of institutions are correctly spelled.' abstractive='รายละเอียดของการทำหนังสือขออนุเคราะห์ข้อมูลเพื่อประกอบการศึกษาของคณะอนุกรรมาธิการศึกษาการปฏิรูปกระบวนการยุติธรรมและสิทธิมนุษยชน มี 3 เรื่อง ได้แก่ 1. ทำหนังสือถึงธนาคารแห่งประเทศไทย เพื่อขอข้อมูลแบบฟอร์ม Know Your Customer (KYC) เงื่อนไขการตรวจสอบการเปิดบัญชี มาตรการการดำเนินการป้องกันภัยทุจริตทางการเงิน มาตรฐานการเปิดบัญชีของธนาคาร และปัญหาที่พบหรือข้อเสนอแนะที่เกี่ยวกับมาตรการป้องกันอาชญากรรมทางเทคโนโลยี 2. ทำหนังสือถึงสำนักงานศาลยุติธรรม เพื่อขอข้อมูลข้อมูลสถิติ สัดส่วนคดีผู้ต้องขังระหว่างพิจารณาและผู้ถูกจำคุกในข้อหาที่เกี่ยวข้องกับกฎหมายต่าง ๆ ประกอบด้วยพระราชกำหนดมาตรการป้องกันและปราบปรามอาชญากรรมทางเทคโนโลยี พ.ศ. ๒๕๖๖ พระราชบัญญัติป้องกันและปราบปรามการมีส่วนร่วมในองค์กรอาชญากรรมข้ามชาติ พ.ศ. ๒๕๕๖ และกฎหมายที่เกี่ยวข้องกับการฉ้อโกง Romance Scam และการซื้อขายบัญชีออนไลน์ รวมทั้งปัญหาที่พบหรือข้อเสนอแนะที่เกี่ยวกับมาตรการป้องกันอาชญากรรมทางเทคโนโลยี' used_refs=['P105', 'P106', 'P107', 'P108']
+✅ --- RESULT FOR Q0006 ---
+   [QUERY] รายละเอียดของการทำหนังสือขออนุเคราะห์ข้อมูลเพื่อประกอบการศึกษาของคณะอนุกรรมาธิการศึกษาการปฏิรูปกระบวนการยุติธรรมและสิทธิมนุษยชน มีอะไรบ้าง
+   [ACTUAL REFS]  : ['P105', 'P106', 'P107', 'P108']
+   [REFS USED] ['P105', 'P106', 'P107', 'P108']
+   [ABSTRACTIVE]  : รายละเอียดของการทำหนังสือขออนุเคราะห์ข้อมูลเพื่อปร...
+------------------------------------------
+
+INFO 06-03 02:24:25 [metrics.py:386] Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 95.9 tokens/s, Running: 1 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 2.9%, CPU KV cache usage: 0.0%.
+INFO 06-03 02:24:25 [async_llm_engine.py:177] Finished request f2222e58-4670-4ba4-a040-9807d6399c02.
+[😍DEBUG] gen_output analysis="The query asks about the next committee meeting's date and time. The context provides the date as 21 August 2567 and time as 09:30." pattern_matching='Pattern 2' draft_content='ที่ประชุมเห็นชอบกำหนดนัดประชุมครั้งต่อไป วันพุธที่ 21 สิงหาคม 2567 เวลา 09.30 นาฬิกา โดยมีระเบียบวาระการประชุมเรื่อง พิจารณาศึกษาเรื่อง ความคืบหน้าในการดำเนินการเกี่ยวกับแนวทางการแก้ไขปัญหาการจัดการข้อมูลประวัติอาชญากรรม โดยเชิญผู้ที่เกี่ยวข้องมาให้ข้อมูลต่อคณะกรรมาธิการ ดังนี้' refinement='กำหนดการประชุมคณะกรรมาธิการครั้งต่อไป ที่ประชุมเห็นชอบกำหนดนัดประชุมครั้งต่อไป วันพุธที่ 21 สิงหาคม 2567 เวลา 09.30 นาฬิกา โดยมีระเบียบวาระการประชุมเรื่อง พิจารณาศึกษาเรื่อง ความคืบหน้าในการดำเนินการเกี่ยวกับแนวทางการแก้ไขปัญหาการจัดการข้อมูลประวัติอาชญากรรม โดยเชิญผู้ที่เกี่ยวข้องมาให้ข้อมูลต่อคณะกรรมาธิการ ดังนี้' numeral_and_entity_check='All numbers are converted to Arabic numerals. No personal names are masked.' abstractive='กำหนดการประชุมคณะกรรมาธิการครั้งต่อไป ที่ประชุมเห็นชอบกำหนดนัดประชุมครั้งต่อไป วันพุธที่ 21 สิงหาคม 2567 เวลา 09.30 นาฬิกา โดยมีระเบียบวาระการประชุมเรื่อง พิจารณาศึกษาเรื่อง ความคืบหน้าในการดำเนินการเกี่ยวกับแนวทางการแก้ไขปัญหาการจัดการข้อมูลประวัติอาชญากรรม โดยเชิญผู้ที่เกี่ยวข้องมาให้ข้อมูลต่อคณะกรรมาธิการ ดังนี้' used_refs=['P110']
+✅ --- RESULT FOR Q0015 ---
+   [QUERY] กำหนดการประชุมคณะกรรมาธิการครั้งต่อไป วันที่เท่าไหร่ เวลาเท่าใด
+   [ACTUAL REFS]  : ['P110']
+   [REFS USED] ['P110']
+   [ABSTRACTIVE]  : กำหนดการประชุมคณะกรรมาธิการครั้งต่อไป ที่ประชุมเห็...
+------------------------------------------
+
+
+--- 📝 บันทึกผลลัพธ์ลง /lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/result/submission.csv สำเร็จ (15 รายการ) ---

@@ -1,0 +1,44 @@
+# ── requirements.txt ──────────────────────────────────────────────────────────
+# Python 3.10+  |  CUDA 12.6  |  Qwen3-8B LoRA training
+#
+# ติดตั้ง:
+#   pip install -r requirements.txt
+# หรือถ้าใช้ uv:
+#   uv pip install -r requirements.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Core DL ───────────────────────────────────────────────────────────────────
+# PyTorch wheel สำหรับ CUDA 12.6 (ติดตั้งก่อนรัน pip install)
+# pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
+#     --index-url https://download.pytorch.org/whl/cu124
+# (CUDA 12.4 wheel ใช้ได้กับ CUDA 12.6 เพราะ backward compatible)
+
+# ── Transformers ecosystem ────────────────────────────────────────────────────
+transformers>=4.51.0          # รองรับ Qwen3 + enable_thinking flag
+datasets>=3.2.0
+accelerate>=1.3.0
+peft>=0.14.0                  # LoRA / QLoRA
+trl>=0.13.0                   # SFTTrainer
+tokenizers>=0.21.0
+
+# ── Flash Attention 2 ─────────────────────────────────────────────────────────
+# ต้องการ ninja + packaging ก่อน
+ninja
+packaging
+flash-attn>=2.7.0             # compile จาก source หรือใช้ wheel จาก
+                              # https://github.com/Dao-AILab/flash-attention/releases
+
+# ── Numerical / IO ────────────────────────────────────────────────────────────
+bitsandbytes>=0.45.0          # optional (ใช้ถ้าทำ QLoRA 4-bit)
+scipy
+numpy>=1.26.0
+pandas
+
+# ── Monitoring (optional) ─────────────────────────────────────────────────────
+# wandb                       # uncomment ถ้าต้องการ W&B logging
+# tensorboard                 # uncomment ถ้าต้องการ TensorBoard
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+sentencepiece
+protobuf
+einops
