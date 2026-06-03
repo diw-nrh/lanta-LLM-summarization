@@ -1,7 +1,14 @@
 from typing import Dict, Any, List
 from pydantic import BaseModel, Field
 import os
+import re
 from .llm_clients import llm_client
+
+def clean_format(text: str) -> str:
+    if not text: return ""
+    text = re.sub(r'^(สรุปคือ|คำตอบคือ|สรุปได้ว่า)\s*', '', text)
+    text = re.sub(r'(ครับ|ค่ะ)$', '', text).strip()
+    return text
 
 class GeneratorOutput(BaseModel):
     analysis: str = Field(description="Analyze the query. Scan the context for the core facts.")
@@ -16,11 +23,12 @@ async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- RUNNING AGENT B: GENERATOR ---")
     query = state.get("query", "")
     context = state.get("context", "")
+    retriever_refs = state.get("refs", [])
     
     if context == "ไม่พบคำตอบ":
         return {
             "abstractive": "ไม่พบคำตอบ",
-            "used_refs": []
+            "used_refs": retriever_refs
         }
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -47,13 +55,24 @@ YOUR CURRENT TASK:
         gen_output = await llm_client.agenerate_structured(prompt, GeneratorOutput)
         if gen_output:
             abstractive = gen_output.abstractive
-            used_refs = gen_output.used_refs
+            if not abstractive or abstractive.strip() == "":
+                # print("[WARN] abstractive is empty! Falling back to refinement or draft_content (มโน mode)...")
+                abstractive = gen_output.refinement if gen_output.refinement else gen_output.draft_content
+                if not abstractive:
+                    # ไม้ตายสุดท้าย: ดึง Text ดิบๆ จากที่ Reranker หามาได้ ส่งไปเลย!
+                    abstractive = re.sub(r'\[P\d+\]:\s*', '', context).replace('\n', ' ').strip()
+            
+            used_refs = gen_output.used_refs or []
+            if not used_refs:
+                used_refs = retriever_refs
+                
             thai_to_arabic = str.maketrans('๐๑๒๓๔๕๖๗๘๙', '0123456789')
-            abstractive = abstractive.translate(thai_to_arabic)
+            abstractive = str(abstractive).translate(thai_to_arabic)
+            abstractive = clean_format(abstractive)
         else:
-            abstractive = "Fallback abstractive answer due to parse error."
-            used_refs = []
-        print("[😍DEBUG] gen_output",gen_output)
+            abstractive = "ไม่พบข้อมูลที่เพียงพอสำหรับสรุปคำตอบ"
+            used_refs = retriever_refs
+        # print("[😍DEBUG] gen_output",gen_output)
     except Exception as e:
         print(f"[ERROR] Agent B Failed: {e}")
         abstractive = "Error during generation."

@@ -60,3 +60,38 @@ class EmbeddingEngine:
 
 # Global instance
 embedder = EmbeddingEngine()
+
+class RerankerEngine:
+    def __init__(self):
+        print("Initializing Reranker...")
+        try:
+            import torch
+            from transformers import AutoModelForSequenceClassification, AutoTokenizer
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            self.model_path = os.path.abspath(os.path.join(current_dir, "../../models/bge-reranker-v2-m3"))
+            if os.path.exists(self.model_path):
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
+                self.model = AutoModelForSequenceClassification.from_pretrained(self.model_path).half().cuda().eval()
+                print("--- 🚀 Reranker Initialized! ---")
+                self.ready = True
+            else:
+                print(f"[WARN] Reranker model path not found: {self.model_path}")
+                self.ready = False
+        except Exception as e:
+            print(f"[WARN] Reranker not initialized: {e}")
+            self.ready = False
+
+    def compute_scores(self, query: str, texts: List[str]) -> List[float]:
+        if not self.ready or not texts: return [0.0] * len(texts)
+        pairs = [[query, t] for t in texts]
+        try:
+            import torch
+            with torch.no_grad():
+                inputs = self.tokenizer(pairs, padding=True, truncation=True, return_tensors='pt', max_length=1024).to('cuda')
+                scores = self.model(**inputs, return_dict=True).logits.view(-1, ).float().cpu().numpy().tolist()
+            return scores
+        except Exception as e:
+            print(f"[ERROR] Reranking failed: {e}")
+            return [0.0] * len(texts)
+
+reranker = RerankerEngine()

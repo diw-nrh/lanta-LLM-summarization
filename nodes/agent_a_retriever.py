@@ -65,13 +65,13 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     bm25_scores = {}
     if HAS_BM25 and all_para_ids:
-        tokenized_corpus = [tokenize_thai(doc_texts[p]) for p in all_para_ids]
-        bm25 = BM25Okapi(tokenized_corpus)
-        tokenized_query = str(query).split(" ")
-        raw_bm25_scores = bm25.get_scores(tokenized_query)
-        max_bm25 = max(raw_bm25_scores) if len(raw_bm25_scores) > 0 and max(raw_bm25_scores) > 0 else 1
-        for idx, p_id in enumerate(all_para_ids):
-            bm25_scores[p_id] = raw_bm25_scores[idx] / max_bm25
+        bm25, _ = document_store.get_bm25(doc_id)
+        if bm25:
+            tokenized_query = str(query).split(" ")
+            raw_bm25_scores = bm25.get_scores(tokenized_query)
+            max_bm25 = max(raw_bm25_scores) if len(raw_bm25_scores) > 0 and max(raw_bm25_scores) > 0 else 1
+            for idx, p_id in enumerate(all_para_ids):
+                bm25_scores[p_id] = raw_bm25_scores[idx] / max_bm25
     
     scores = {}
     if doc_embeddings and q_vec is not None:
@@ -115,137 +115,40 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
         groups.append(current_group)
     
     group_texts = []
+    group_refs_list = []
     for g_idx, group in enumerate(groups):
         min_idx = max(0, min(item[0] for item in group) - 1)
         max_idx = min(len(all_para_ids) - 1, max(item[0] for item in group) + 2)
         
         lines = []
+        refs = []
         for idx in range(min_idx, max_idx + 1):
             p_id = all_para_ids[idx]
+            refs.append(p_id)
             text = str(doc_texts.get(p_id, "")).strip()
             lines.append(f"[{p_id}]: {text}")
         group_texts.append("\n".join(lines))
+        group_refs_list.append(refs)
     
     # ==============================================
-    # STAGE 3: สกัดหา Paragraph ที่ใช่ (Extract Refs) ด้วย CoT
+    # STAGE 3 & 4: Reranker Selection (Replacing LLM)
     # ==============================================
     top_n_eval = 5
     eval_groups = group_texts[:top_n_eval]
+    eval_refs = group_refs_list[:top_n_eval]
     
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    skill_file_path = os.path.abspath(os.path.join(current_dir, "..", "skills", "skill_retriever_ranker.md"))
-    try:
-        with open(skill_file_path, "r", encoding="utf-8") as f:
-            system_instruction = f.read()
-    except Exception:
-        system_instruction = "You are a precision paragraph filter for Thai parliamentary meeting records."
-
-    prompts_list = []
-    for g_idx, g_text in enumerate(eval_groups):
-        # 🌟 อัปเดต Prompt ให้สอดคล้องกับระบบคะแนน 1-3
-        prompt = f"""{system_instruction}
-
-[Query]: {query}
-[Context Group {g_idx + 1}]:
-{g_text}
-
-CRITICAL INSTRUCTIONS FOR JSON OUTPUT:
-- DO NOT output placeholder text. You MUST generate actual analysis based on the text above.
-- BE CAREFUL with Thai numerals (๑,๒,๓,๔,๕,๖,๗,๘,๙,๐) vs Arabic numerals (1,2,3...). Do not misread '๑๔' as '๑ไ' or '๒๕๖๗' as '๒๕ๆ๗'.
-
-TASK (Step-by-Step Elimination):
-1. query_intent: What exactly is the query asking for?
-2. irrelevant_paras_analysis: Which paragraphs are irrelevant, just headers, or do not contain the answer? Why? (Exclude them)
-3. relevant_paras_analysis: Which specific paragraphs ACTUALLY contain the exact answer? Why? (If none, state that clearly)
-4. answer_score: Rate the group from 1 to 3. 
-   - 1 = No answer at all.
-   - 2 = Mentions the topic/keywords, but the answer is incomplete or missing.
-   - 3 = Contains the exact, complete answer to the query.
-5. extracted_refs: Provide the precise list of paragraph IDs (e.g., ["P5", "P6"]). If score is 1, you MUST output []."""
-        prompts_list.append(prompt)
-        
-    tasks = [llm_client.agenerate_structured(p, GroupExtraction) for p in prompts_list]
-    batch_results = await asyncio.gather(*tasks)
-    
-    # 🌟 แยกระดับกลุ่มตามคะแนนที่ได้ (3 และ 2)
-    valid_groups_score_3 = []
-    valid_groups_score_2 = []
-    
-    for g_idx, res in enumerate(batch_results):
-        if res and res.extracted_refs and res.answer_score > 1:
-            group_info = {
-                "g_idx": g_idx, 
-                "display_id": g_idx + 1,
-                "refs": res.extracted_refs,
-                "reasoning": f"Intent: {res.query_intent}\nIrrelevant: {res.irrelevant_paras_analysis}\nRelevant: {res.relevant_paras_analysis}\nScore: {res.answer_score}"
-            }
-            if res.answer_score == 3:
-                valid_groups_score_3.append(group_info)
-            elif res.answer_score == 2:
-                valid_groups_score_2.append(group_info)
-
-    # 🌟 เลือกว่าจะส่งกลุ่มไหนเข้าชิง (ให้ความสำคัญกับกลุ่มที่ได้ 3 ก่อน)
-    if valid_groups_score_3:
-        valid_groups = valid_groups_score_3
-        print(f"Query : {query} \nDEBUG (Found groups with score 3) : {len(valid_groups)}")
-    elif valid_groups_score_2:
-        valid_groups = valid_groups_score_2
-        print(f"Query : {query} \nDEBUG (No score 3 found. Using score 2 fallback) : {len(valid_groups)}")
-    else:
-        valid_groups = []
-        print(f"Query : {query} \nDEBUG (No valid groups found)")
-    
-    # ==============================================
-    # STAGE 4: ตัดสินผู้ชนะ (Final Selection)
-    # ==============================================
     final_refs = []
-    anchor_result = None 
+    from .embedder import reranker
     
-    if not valid_groups:
-        print("[WARN] ไม่มีกลุ่มไหนมีคำตอบเลย -> ลองสุ่มมโน 1 Paragraph ที่คะแนน Vector สูงสุด")
-        final_refs = [p_id for p_id, score in sorted_paras[:1]]
-    elif len(valid_groups) == 1:
-        print("[INFO] มีเพียง 1 กลุ่มที่ตอบได้ดีที่สุด -> ใช้งานทันที")
-        final_refs = valid_groups[0]["refs"]
+    if reranker.ready and eval_groups:
+        print(f"[INFO] Using Cross-Encoder Reranker for selection on {len(eval_groups)} groups...")
+        scores = reranker.compute_scores(query, eval_groups)
+        best_idx = int(np.argmax(scores))
+        final_refs = eval_refs[best_idx]
+        print(f"✅ Reranker selected Group {best_idx+1} with score {scores[best_idx]:.4f}")
     else:
-        print(f"[INFO] มีเข้าชิง {len(valid_groups)} กลุ่ม -> ส่งให้ LLM ฟันธง")
-        groups_display = ""
-        for vg in valid_groups:
-            extracted_text_lines = []
-            for p_id in vg["refs"]:
-                if p_id in doc_texts:
-                    extracted_text_lines.append(f"[{p_id}]: {doc_texts[p_id]}")
-            actual_text = "\n".join(extracted_text_lines)
-            
-            groups_display += f"\n=== GROUP {vg['display_id']} (Extracted Refs: {vg['refs']}) ===\n"
-            groups_display += f"Reasoning from Stage 3:\n{vg['reasoning']}\n"
-            groups_display += f"Actual Text Content:\n{actual_text}\n"
-        
-        anchor_prompt = f"""You are an expert document analyst.
-[Query]: {query}
-
-Multiple candidate groups claim to have the answer. 
-Here are their analyses and the ACTUAL TEXT they extracted:
-{groups_display}
-
-Perform a step-by-step evaluation (Chain of Thought):
-1. Read the 'Actual Text Content' of each candidate group carefully.
-2. Determine which group provides the most complete and direct answer to the query.
-3. Output the exact group ID (e.g., if GROUP 2 is best, output 2)."""
-        
-        try:
-            anchor_result = await llm_client.agenerate_structured(anchor_prompt, FinalWinnerSelection)
-            if anchor_result:
-                best_display_id = anchor_result.best_group_idx
-                winning_vg = next((vg for vg in valid_groups if vg["display_id"] == best_display_id), valid_groups[0])
-                final_refs = winning_vg["refs"]
-            else:
-                final_refs = valid_groups[0]["refs"]
-        except Exception as e:
-            print(f"[ERROR] Final selection failed: {e}")
-            final_refs = valid_groups[0]["refs"]
-            
-        print(f"Query : {query} \nDEBUG (anchor_result) : {anchor_result}")
+        print("[WARN] Reranker not ready or no groups -> ลองสุ่มมโน 1 Paragraph ที่คะแนน Vector สูงสุด")
+        final_refs = [p_id for p_id, score in sorted_paras[:1]]
     
     # สร้าง Text Context จาก Ref สุดท้ายที่ชนะ
     selected_lines = []
