@@ -5,7 +5,7 @@ import os
 import asyncio
 from .document_store import document_store
 from .embedder import embedder
-from .llm_clients import llm_client
+# Removed unused llm_client import that causes vLLM multiprocessing crashes
 
 try:
     from rank_bm25 import BM25Okapi
