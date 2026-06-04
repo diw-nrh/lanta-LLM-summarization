@@ -12,8 +12,8 @@ def clean_format(text: str) -> str:
     return text
 
 class PreFilterExtraction(BaseModel):
-    reasoning: str = Field(description="Briefly explain your selection. Identify the core paragraphs and ONLY the necessary contextual paragraphs (like agenda headings). Exclude adjacent paragraphs from different topics.")
-    relevant_refs: List[str] = Field(description="List ALL specific paragraph IDs (e.g., P5, P6) that are relevant. Include core paragraphs and their immediate contextual headings, but strictly exclude adjacent paragraphs belonging to a different topic or agenda item.")
+    reasoning: str = Field(description="Briefly explain your selection in 1-2 sentences. Do not evaluate every single paragraph to save tokens.")
+    relevant_refs: List[str] = Field(description="List ONLY the specific paragraph IDs (e.g., P5, P6) that contain the direct answer. Be extremely strict.")
 
 async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- RUNNING AGENT B: TWO-STEP HYBRID PIPELINE ---")
@@ -37,7 +37,7 @@ async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
         
     # STEP 0: Pre-filter Context วิ่งผ่าน Base Model 14B + JSON เพื่อคัดกรอง context ก่อนส่งเข้า LoRA
     print("[INFO] Step 0: Pre-filtering Context (Using Base Model with CoT)")
-    prompt0 = f"""<|im_start|>system\nYou are an expert evaluator. Your task is to identify which paragraphs from the context are relevant to answer the query.\n<|im_end|>\n<|im_start|>user\n[Query]\n{query}\n\n[Context]\n{context}\n\nBriefly analyze the query and extract the specific paragraph IDs (e.g., P5, P6). Rules:\n1. Include the core paragraphs that directly answer the query.\n2. Include necessary contextual paragraphs (like the specific agenda heading or introductory sentence of the SAME topic).\n3. DO NOT include adjacent paragraphs if they belong to a different agenda item, a different topic, or are not necessary to understand the core answer.\nFilter out all irrelevant noise.\n<|im_end|>\n<|im_start|>assistant\n"""
+    prompt0 = f"""<|im_start|>system\nYou are an expert evaluator. Your task is to identify which paragraphs from the context are most relevant to answer the query.\n<|im_end|>\n<|im_start|>user\n[Query]\n{query}\n\n[Context]\n{context}\n\nBriefly analyze the query and extract ONLY the specific paragraph IDs (e.g., P5, P6) that contain information directly relevant and necessary to the query. Filter out irrelevant noise.\n<|im_end|>\n<|im_start|>assistant\n"""
     
     filtered_context = context
     used_refs = []
