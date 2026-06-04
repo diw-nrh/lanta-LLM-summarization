@@ -1,9 +1,3 @@
-"""
-train_rl.py
----------------
-Train Agent B (Single-Pass) using GRPO with actual competition metrics as the Reward Function.
-"""
-
 import os
 import json
 import argparse
@@ -17,6 +11,7 @@ from datasets import Dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import LoraConfig, get_peft_model, TaskType
 from trl import GRPOTrainer, GRPOConfig
+from accelerate import PartialState # เพิ่ม accelerate เพื่อจัดการ GPU 
 
 from sentence_transformers import SentenceTransformer
 from pythainlp.tokenize import word_tokenize
@@ -26,8 +21,6 @@ from rouge_score.tokenizers import Tokenizer
 # ═══════════════════════════════════════════════════════
 # 1. EVALUATION UTILS & REWARD FUNCTIONS
 # ═══════════════════════════════════════════════════════
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
 def tokenize_thai(text):
     if not isinstance(text, str) or text.strip() == "":
         return ""
@@ -51,13 +44,13 @@ embedding_model = None
 def get_embedding_model(model_path):
     global embedding_model
     if embedding_model is None:
-        embedding_model = SentenceTransformer(model_path)
+        # กำหนดให้โหลดโมเดลลง GPU ที่ถูกต้องตาม DDP process แบบไดนามิก
+        device_index = PartialState().local_process_index
+        device = f"cuda:{device_index}" if torch.cuda.is_available() else "cpu"
+        embedding_model = SentenceTransformer(model_path, device=device)
     return embedding_model
 
 def competition_reward_func(completions, sol_refs, sol_abstractive, **kwargs):
-    """
-    GRPO Reward function that uses the exact competition metrics!
-    """
     import json
     
     pred_abstractives = []
@@ -65,21 +58,15 @@ def competition_reward_func(completions, sol_refs, sol_abstractive, **kwargs):
     format_rewards = []
     
     for comp in completions:
-        # TRL GRPO completions usually come as a list of strings
         text = comp[0]["content"] if isinstance(comp, list) else str(comp)
         text = text.strip()
         
-        # Try to parse JSON
         try:
-            # If model wraps in ```json ... ```, strip it
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0].strip()
-            elif "```" in text:
-                text = text.split("```")[1].split("```")[0].strip()
+            match = re.search(r'\{.*\}', text, re.DOTALL)
+            json_text = match.group(0) if match else text
                 
-            parsed = json.loads(text)
+            parsed = json.loads(json_text)
             
-            # Allow keys to be flexible if model makes minor mistakes during RL
             a = parsed.get("abstractive", "")
             r_list = parsed.get("used_refs", [])
             
@@ -88,34 +75,27 @@ def competition_reward_func(completions, sol_refs, sol_abstractive, **kwargs):
             
             pred_abstractives.append(str(a))
             pred_refs_list.append(r_list)
-            
-            # Format bonus
             format_rewards.append(0.2)
         except Exception:
-            # Penalty for invalid JSON during RL
             pred_abstractives.append("")
             pred_refs_list.append([])
             format_rewards.append(-0.5)
 
-    # 2. Calculate IoU
     iou_scores = [calculate_iou(p, s) for p, s in zip(pred_refs_list, sol_refs)]
     
-    # 3. Calculate Rouge-L
     scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=False, tokenizer=ThaiSpaceTokenizer())
     sol_toks = [tokenize_thai(s) for s in sol_abstractive]
     pred_toks = [tokenize_thai(p) for p in pred_abstractives]
     
     rouge_scores = []
     for g, p in zip(sol_toks, pred_toks):
-        if not p: # Empty prediction
+        if not p:
             rouge_scores.append(0.0)
         else:
             rouge_scores.append(scorer.score(g, p)['rougeL'].fmeasure)
             
-    # 4. Calculate SS-score (bge-m3)
-    bge = get_embedding_model(kwargs.get('bge_model_path', '/lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/models/bge-m3'))
+    bge = get_embedding_model(kwargs.get('bge_model_path'))
     
-    # Handle empty predictions so bge doesn't crash
     safe_pred_abstractives = [p if p else "ไม่มีข้อความ" for p in pred_abstractives]
     
     texts = sol_abstractive + safe_pred_abstractives
@@ -126,17 +106,14 @@ def competition_reward_func(completions, sol_refs, sol_abstractive, **kwargs):
     
     ss_scores = F.cosine_similarity(pred_emb, ref_emb, dim=1).cpu().numpy().tolist()
     
-    # 5. Final Reward Calculation
     final_rewards = []
     wss, wrl, wj = 0.45, 0.35, 0.2
     
     for ss, rl, iou, fmt in zip(ss_scores, rouge_scores, iou_scores, format_rewards):
         score = (wss * ss) + (wrl * rl) + (wj * iou)
-        # Final reward = Competition Score + Format Bonus
         final_rewards.append(score + fmt)
         
     return final_rewards
-
 
 # ═══════════════════════════════════════════════════════
 # 2. CONFIG
@@ -147,22 +124,21 @@ class RLScriptArgs:
     bge_model_path: str = "/lustrefs/disk/project/zz991000-zdeva/zz991012/my_workspace/submission/models/bge-m3"
     train_file: str = "data/train_rl_rag.json"
     
-    # LoRA
     lora_r:       int   = 32
     lora_alpha:   int   = 64
     lora_dropout: float = 0.05
     lora_target:  str   = "q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj"
 
-    # RL GRPO
     output_dir:                  str   = "models_rl"
-    num_train_epochs:            int   = 1 # RL usually needs fewer epochs
+    num_train_epochs:            int   = 1 
     per_device_train_batch_size: int   = 1
-    gradient_accumulation_steps: int   = 8
-    learning_rate:               float = 1e-5 # Smaller LR for RL
-    max_completion_length:       int   = 1024
-    num_generations:             int   = 4 # How many responses to generate per prompt (requires VRAM)
+    gradient_accumulation_steps: int   = 4
+    learning_rate:               float = 1e-5 
+    max_completion_length:       int   = 1024 
+    num_generations:             int   = 2 
 
-    bf16: bool = True
+    bf16: bool = True  # เปลี่ยนเป็น True
+    gradient_checkpointing: bool = True # เพิ่มเข้ามาเพื่อประหยัด VRAM
     seed: int  = 42
 
 # ═══════════════════════════════════════════════════════
@@ -196,7 +172,6 @@ def load_rl_dataset(input_path: str):
         
         user_msg = build_prompt(query, context)
         
-        # TRL expects messages format for prompt
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_msg}
@@ -206,7 +181,6 @@ def load_rl_dataset(input_path: str):
         sol_refs_list.append(sol_refs)
         sol_abs_list.append(answer)
 
-    # Convert to HuggingFace Dataset
     ds = Dataset.from_dict({
         "prompt": prompts,
         "sol_refs": sol_refs_list,
@@ -218,7 +192,6 @@ def load_rl_dataset(input_path: str):
 # 4. TRAIN
 # ═══════════════════════════════════════════════════════
 def train(args: RLScriptArgs):
-    # Pre-load BGE model so it doesn't load multiple times
     get_embedding_model(args.bge_model_path)
     
     dataset = load_rl_dataset(args.train_file)
@@ -233,7 +206,6 @@ def train(args: RLScriptArgs):
         bias="none",
     )
 
-    # Only pass valid arguments to GRPOConfig according to the new API
     training_args = GRPOConfig(
         output_dir=args.output_dir,
         learning_rate=args.learning_rate,
@@ -241,24 +213,38 @@ def train(args: RLScriptArgs):
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         num_train_epochs=args.num_train_epochs,
         bf16=args.bf16,
+        gradient_checkpointing=args.gradient_checkpointing, # เปิดใช้งาน
+        ddp_find_unused_parameters=False,                   # ปิดเพื่อแก้ warning และเทรนเร็วขึ้น
         max_completion_length=args.max_completion_length,
         num_generations=args.num_generations,
         logging_steps=10,
-        save_steps=100,
+        save_steps=20,
         seed=args.seed,
     )
     
-    # Wrapper for kwargs passing to reward function
     def wrapped_reward(prompts, completions, sol_refs, sol_abstractive, **kwargs):
         return competition_reward_func(completions, sol_refs, sol_abstractive, bge_model_path=args.bge_model_path)
     
+    # ทางเลือกเพิ่มเติม: โหลด Base model ด้วย bfloat16 ตั้งแต่ต้นเพื่อให้แน
+    # ทางเลือกเพิ่มเติม: โหลด Base model ด้วย bfloat16 ตั้งแต่ต้นเพื่อให้แน่ใจเรื่องการจัดการ Memory
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_name,
+        torch_dtype=torch.bfloat16,
+    )
+
     trainer = GRPOTrainer(
-        model=args.model_name,
+        model=model,
         reward_funcs=[wrapped_reward],
         args=training_args,
         train_dataset=dataset,
         peft_config=lora_config
     )
+
+    if hasattr(trainer, "model") and hasattr(trainer.model, "generation_config"):
+        trainer.model.generation_config.do_sample = True
+        trainer.model.generation_config.temperature = 0.9
+        trainer.model.generation_config.top_p = 0.9
+        trainer.model.generation_config.max_new_tokens = args.max_completion_length
 
     print("\n🚀 Start RL Training (GRPO)...")
     trainer.train()
@@ -270,10 +256,17 @@ def train(args: RLScriptArgs):
 if __name__ == "__main__":
     args = RLScriptArgs()
     parser = argparse.ArgumentParser()
+    
+    # ดึงค่าจาก dataclass มาสร้างเป็น Argument สำหรับรับค่าจาก Command Line
     for f in args.__dataclass_fields__:
         default = getattr(args, f)
+        # ตรวจสอบชนิดข้อมูลเพื่อให้รับค่าได้ถูกต้อง
         parser.add_argument(f"--{f}", type=type(default), default=default)
+        
     cli, _ = parser.parse_known_args()
+    
+    # อัปเดตค่ากลับเข้าไปใน dataclass
     for f in args.__dataclass_fields__:
         setattr(args, f, getattr(cli, f))
+        
     train(args)

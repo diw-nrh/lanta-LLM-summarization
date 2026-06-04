@@ -45,7 +45,7 @@ nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader
 
 # Step 1: Prepare RL Data using Agent A
 echo "=== Step 1: Running Agent A RAG Preparation ==="
-/project/zz991000-zdeva/zz991012/summarize_101/bin/python trainer/prepare_rl_data.py
+#/project/zz991000-zdeva/zz991012/summarize_101/bin/python trainer/prepare_rl_data.py
 
 # Step 2: Train RL (GRPO)
 echo "=== Step 2: Starting RL Training ==="
@@ -59,15 +59,14 @@ accelerate launch \
     --output_dir "models_rl/" \
     --num_train_epochs 1 \
     --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 8 \
+    --gradient_accumulation_steps 4 \
     --learning_rate 1e-5 \
-    --max_prompt_length 2048 \
-    --max_completion_length 512 \
-    --num_generations 4 \
+    --max_completion_length 1024  \
+    --num_generations 2 \
     --lora_r 32 \
     --lora_alpha 64 \
-    --bf16 True
-
+    --bf16 True \
+    --gradient_checkpointing True
 # Step 2: Inference demo
 python trainer/inference.py \
     --adapter_path models_rl/final \
