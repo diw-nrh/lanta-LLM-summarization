@@ -7,39 +7,46 @@ from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.engine.arg_utils import AsyncEngineArgs
 #from vllm import SamplingParams
 from vllm.sampling_params import SamplingParams, GuidedDecodingParams
+from vllm.lora.request import LoRARequest
 
 class LLMClient:
     def __init__(self):
         print("Initializing vLLM AsyncEngine (In-Process)...")
         try:
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            model_path = os.path.abspath(os.path.join(current_dir, "../../models/Qwen3-8B")) 
+            base_model_path = os.path.abspath(os.path.join(current_dir, "../../models/Qwen3-8B")) 
+            self.lora_path = os.path.abspath(os.path.join(current_dir, "../../models_train/final"))
             
             engine_args = AsyncEngineArgs(
-                model=model_path,
+                model=base_model_path,
+                enable_lora=True,
+                max_loras=1,
+                max_lora_rank=64,
                 trust_remote_code=True,
                 max_model_len=32768,
                 tensor_parallel_size=1,
-                gpu_memory_utilization=0.8, # ✅ 1. ต้องเปลี่ยนเป็น 0.9 ครับ (เพราะโมเดล 14B ใหญ่มาก)
-                enforce_eager=True          # ✅ 2. ต้องเติมบรรทัดนี้ เพื่อปิด CUDA Graph และเอา VRAM คืนมาครับ
+                gpu_memory_utilization=0.8,
+                enforce_eager=True
             )
             self.engine = AsyncLLMEngine.from_engine_args(engine_args)
             print("--- 🚀 Local vLLM Engine Initialized! ---")
         except Exception as e:
             raise RuntimeError(f"Failed to initialize vLLM Engine: {e}")
 
-    async def agenerate_structured(self, prompt: str, schema: Type[BaseModel], temperature: float = 0.1) -> BaseModel:
+    async def agenerate_structured(self, prompt: str, schema: Type[BaseModel], temperature: float = 0.1, use_lora: bool = False) -> BaseModel:
         schema_json = schema.model_json_schema()
         
         # เปิดใช้งาน guided_json บังคับโครงสร้าง
         sampling_params = SamplingParams(
-            temperature=temperature,
-            max_tokens=10240,  # ✅ 1. ลดลงมา! งานนี้ใช้ไม่เกิน 1500 Token แน่นอน (ช่วยให้มันตัดจบทันทีถ้ารวน)
-            stop=["<|im_end|>", "<|endoftext|>"], # ✅ 2. บังคับใส่เบรกฉุกเฉินให้ Qwen (ถ้าเจอคำนี้คือหยุดทันที)
-            repetition_penalty=1.05,
+            temperature=0.1, # กลับมาใช้ 0.1 ให้ตอบนิ่งที่สุด
+            max_tokens=1024, # ลด Max Tokens เป็น 1024 เพื่อกันปัญหา OOM (Exit 137)
+            stop=["<|im_end|>", "<|endoftext|>"], 
+            repetition_penalty=1.05, # กลับมาเปิด Penalty อ่อนๆ เพื่อหยุดอาการแผ่นเสียงตกร่อง (Looping)
+            presence_penalty=0.05, # เปิดไว้อ่อนๆ กันลูป
+            frequency_penalty=0.05, # เปิดไว้อ่อนๆ กันลูป
             guided_decoding=GuidedDecodingParams(
                 json=json.dumps(schema_json),
-                backend="outlines" # ✅ 4. ลองเปลี่ยน backend เป็น outlines (มักจะมีปัญหากับ Qwen น้อยกว่า xgrammar)
+                backend="xgrammar"
             )
         )
         
@@ -47,7 +54,8 @@ class LLMClient:
         response_text = ""
         try:
             final_output = None
-            async for request_output in self.engine.generate(prompt, sampling_params, request_id):
+            lora_req = LoRARequest("my_lora", 1, self.lora_path) if use_lora else None
+            async for request_output in self.engine.generate(prompt, sampling_params, request_id, lora_request=lora_req):
                 final_output = request_output
                 
             if not final_output or not final_output.outputs:
@@ -68,6 +76,31 @@ class LLMClient:
             if response_text:
                 print(f"[DEBUG] Raw response that caused the error:\n{repr(response_text)}")
             return None
+
+    async def agenerate_text(self, prompt: str, temperature: float = 0.1, use_lora: bool = True) -> str:
+        sampling_params = SamplingParams(
+            temperature=temperature,
+            max_tokens=1024,
+            stop=["<|im_end|>", "<|endoftext|>"], 
+            repetition_penalty=1.05,
+            presence_penalty=0.05,
+            frequency_penalty=0.05
+        )
+        
+        request_id = str(uuid.uuid4())
+        try:
+            final_output = None
+            lora_req = LoRARequest("my_lora", 1, self.lora_path) if use_lora else None
+            async for request_output in self.engine.generate(prompt, sampling_params, request_id, lora_request=lora_req):
+                final_output = request_output
+                
+            if not final_output or not final_output.outputs:
+                return ""
+                
+            return final_output.outputs[0].text.strip()
+        except Exception as e:
+            print(f"[ERROR] LLM Generation failed: {e}")
+            return ""
 # --- ใส่ไว้ล่างสุดของไฟล์ llm_clients.py ---
 #_llm_client_instance = None
 
