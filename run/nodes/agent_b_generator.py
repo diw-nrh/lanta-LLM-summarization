@@ -11,15 +11,12 @@ def clean_format(text: str) -> str:
     return text
 
 class GeneratorOutput(BaseModel):
-    analysis: str = Field(description="Analyze the query. Scan the context for the core facts.")
-    relevance_filter: str = Field(description="Briefly list which paragraphs are relevant to the query and which are irrelevant to discard.")
-    pattern_matching: str = Field(description="Identify the query type to select the correct formatting pattern (Entity, Time/Location, List, Summary, or Resolution).")
-    ocr_typo_correction: str = Field(description="Check the relevant text for OCR typos, especially years (e.g., '256ใ' -> '2563', '256O' -> '2560', 'เรับ' -> 'รับ'). Write out the corrected numbers/words.")
-    draft_content: str = Field(description="Extract the facts using the corrected text.")
-    refinement: str = Field(description="Rewrite the facts into a full, formal Thai sentence. You MUST echo the subject of the query to form a complete sentence.")
-    entity_check: str = Field(description="Verify that NO personal names are masked; use the exact names.")
-    abstractive: str = Field(description="Provide the final formatted answer. Ensure no typos remain.")
-    used_refs: List[str] = Field(description="List ONLY the paragraph IDs that were kept in relevance_filter.")
+    analysis: str = Field(description="Analyze the query and scan the context for the core facts.")
+    relevance_filter: str = Field(description="Briefly list which paragraphs are relevant to the query.")
+    extracted_facts: str = Field(description="Extract the exact sentences from the text that answer the query. Preserve the EXACT original wording as much as possible to maximize accuracy.")
+    abstractive: str = Field(description="Combine the extracted facts smoothly. DO NOT rewrite or change the vocabulary. Answer directly using the original phrasing from the context.")
+    used_refs: List[str] = Field(description="List EVERY SINGLE paragraph ID (Pxx) that contains the facts used in your answer. If the context spans multiple paragraphs (e.g., P50, P51, P52), you MUST include ALL of them. Do NOT just list one.")
+
 
 async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- RUNNING AGENT B: GENERATOR ---")
@@ -63,10 +60,8 @@ YOUR CURRENT TASK:
                 return len(str(text).strip(" .-\n\t\r")) == 0
 
             if is_invalid(abstractive):
-                if not is_invalid(gen_output.refinement):
-                    abstractive = gen_output.refinement
-                elif not is_invalid(gen_output.draft_content):
-                    abstractive = gen_output.draft_content
+                if not is_invalid(gen_output.extracted_facts):
+                    abstractive = gen_output.extracted_facts
                 else:
                     abstractive = re.sub(r'\[P\d+\]:\s*', '', context).replace('\n', ' ').strip()
             

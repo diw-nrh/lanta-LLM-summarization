@@ -108,8 +108,8 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
     if top_indices:
         current_group = [top_indices[0]]
         for i in range(1, len(top_indices)):
-            # ขยายระยะห่างในการ Group จาก 5 เป็น 10 (ลดจาก 20 เพื่อไม่ให้ Context บวมจนโมเดลหลอน)
-            if top_indices[i][0] - current_group[-1][0] <= 10:
+            # ลดระยะห่าง Group เหลือ 5 เพื่อลด Context บวม
+            if top_indices[i][0] - current_group[-1][0] <= 5:
                 current_group.append(top_indices[i])
             else:
                 groups.append(current_group)
@@ -120,8 +120,8 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
     group_refs_list = []
     for g_idx, group in enumerate(groups):
         min_idx = max(0, min(item[0] for item in group) - 1)
-        # เผื่อความยาวด้านล่างเพิ่มขึ้น (จาก +10 กลับมาเป็น +5 พอ เพื่อกัน LLM หลอน)
-        max_idx = min(len(all_para_ids) - 1, max(item[0] for item in group) + 5)
+        # ลดหางแถวเหลือ +2 เพื่อให้ Context คมกริบ
+        max_idx = min(len(all_para_ids) - 1, max(item[0] for item in group) + 2)
         
         lines = []
         refs = []

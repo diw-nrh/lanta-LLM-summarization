@@ -37,7 +37,7 @@ class LLMClient:
             top_k=40,
             max_tokens=5120, # ลด Max Tokens เป็น 1024 เพื่อกันปัญหา OOM (Exit 137)
             stop=["<|im_end|>", "<|endoftext|>"], 
-            repetition_penalty=1.02,  # 🌟 เอาแค่อ่อนๆ พอ (ห้ามเกิน 1.02 เด็ดขาดสำหรับภาษาไทย)
+            repetition_penalty=1.00,  # 🌟 ปิด Penalty กันชื่อเฉพาะพัง
             presence_penalty=0.00,    # 🌟 เน้นใช้ค่านี้แทน เพื่อสะกิดให้โมเดลเปลี่ยนไปพูดเรื่องใหม่เมื่อจบประโยค
             frequency_penalty=0.00, # เปิดไว้อ่อนๆ กันลูป
             guided_decoding=GuidedDecodingParams(
@@ -79,7 +79,7 @@ class LLMClient:
             top_k=40,
             max_tokens=1024,
             stop=["<|im_end|>", "<|endoftext|>"], 
-            repetition_penalty=1.02,  # 🌟 เอาแค่อ่อนๆ พอ (ห้ามเกิน 1.02 เด็ดขาดสำหรับภาษาไทย)
+            repetition_penalty=1.00,  # 🌟 ปิด Penalty กันชื่อเฉพาะพัง
             presence_penalty=0.00,    # 🌟 เน้นใช้ค่านี้แทน เพื่อสะกิดให้โมเดลเปลี่ยนไปพูดเรื่องใหม่เมื่อจบประโยค
             frequency_penalty=0.00, # เปิดไว้อ่อนๆ กันลูป
         )
