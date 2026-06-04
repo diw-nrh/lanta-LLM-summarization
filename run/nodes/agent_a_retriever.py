@@ -53,7 +53,8 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
         print(f"[WARN] No paragraphs found for doc_id: {doc_id}")
         return {"context": "", "refs": []}
         
-    all_para_ids = list(doc_texts.keys())
+    import re
+    all_para_ids = [p for p in doc_texts.keys() if re.match(r'^P\d+$', str(p).strip())]
     
     # ==============================================
     # STAGE 1: Hybrid Search (bge-m3 + BM25)

@@ -41,9 +41,9 @@ class LLMClient:
             temperature=0.1, # กลับมาใช้ 0.1 ให้ตอบนิ่งที่สุด
             max_tokens=5120, # ลด Max Tokens เป็น 1024 เพื่อกันปัญหา OOM (Exit 137)
             stop=["<|im_end|>", "<|endoftext|>"], 
-            repetition_penalty=1.05, # กลับมาเปิด Penalty อ่อนๆ เพื่อหยุดอาการแผ่นเสียงตกร่อง (Looping)
-            presence_penalty=0.05, # เปิดไว้อ่อนๆ กันลูป
-            frequency_penalty=0.05, # เปิดไว้อ่อนๆ กันลูป
+            repetition_penalty=1.0, # ปิด Penalty เพื่อป้องกันไม่ให้โมเดลหยุดพูดเวลาต้อง List คำซ้ำๆ
+            presence_penalty=0.0, # ปิด Penalty
+            frequency_penalty=0.0, # ปิด Penalty
             guided_decoding=GuidedDecodingParams(
                 json=json.dumps(schema_json),
                 backend="xgrammar"
@@ -82,9 +82,9 @@ class LLMClient:
             temperature=temperature,
             max_tokens=1024,
             stop=["<|im_end|>", "<|endoftext|>"], 
-            repetition_penalty=1.05,
-            presence_penalty=0.05,
-            frequency_penalty=0.05
+            repetition_penalty=1.0,
+            presence_penalty=0.0,
+            frequency_penalty=0.0
         )
         
         request_id = str(uuid.uuid4())
