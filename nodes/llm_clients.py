@@ -39,7 +39,7 @@ class LLMClient:
         # เปิดใช้งาน guided_json บังคับโครงสร้าง
         sampling_params = SamplingParams(
             temperature=0.1, # กลับมาใช้ 0.1 ให้ตอบนิ่งที่สุด
-            max_tokens=1024, # ลด Max Tokens เป็น 1024 เพื่อกันปัญหา OOM (Exit 137)
+            max_tokens=5120, # ลด Max Tokens เป็น 1024 เพื่อกันปัญหา OOM (Exit 137)
             stop=["<|im_end|>", "<|endoftext|>"], 
             repetition_penalty=1.05, # กลับมาเปิด Penalty อ่อนๆ เพื่อหยุดอาการแผ่นเสียงตกร่อง (Looping)
             presence_penalty=0.05, # เปิดไว้อ่อนๆ กันลูป
