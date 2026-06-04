@@ -20,7 +20,7 @@ from pathlib import Path
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
-INPUT_JSON  = "train_set.json"      # path ไฟล์ต้นฉบับ
+INPUT_JSON  = "data/train_set.json"      # path ไฟล์ต้นฉบับ
 OUTPUT_DIR  = Path("data")
 VAL_RATIO   = 0.05                  # 5% validation split
 SEED        = 42
