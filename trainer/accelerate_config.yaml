@@ -1,0 +1,24 @@
+compute_environment: LOCAL_MACHINE
+debug: false
+
+# ── Multi-GPU DDP ──────────────────────────────────────────────────────────
+distributed_type: MULTI_GPU
+num_machines: 1
+num_processes: 4                 # จำนวน GPU
+
+# ── Mixed precision ────────────────────────────────────────────────────────
+mixed_precision: bf16            # ใช้ bfloat16 (Qwen3 ออกแบบมาสำหรับ bf16)
+
+# ── Machine config ─────────────────────────────────────────────────────────
+machine_rank: 0
+main_training_function: main
+main_process_ip: null
+main_process_port: null
+
+# ── GPU selection ──────────────────────────────────────────────────────────
+gpu_ids: all                     # ใช้ทุก GPU ที่มองเห็น (0,1,2,3)
+same_network: true
+
+# ── DDP optimisation ──────────────────────────────────────────────────────
+gradient_accumulation_steps: 2
+dynamo_backend: no               # เปลี่ยนเป็น "inductor" ถ้าต้องการ torch.compile
