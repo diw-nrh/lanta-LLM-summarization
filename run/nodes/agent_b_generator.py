@@ -17,7 +17,7 @@ class GeneratorOutput(BaseModel):
     ocr_typo_correction: str = Field(description="Check the relevant text for OCR typos, especially years (e.g., '256ใ' -> '2563', '256O' -> '2560', 'เรับ' -> 'รับ'). Write out the corrected numbers/words.")
     draft_content: str = Field(description="Extract the facts using the corrected text.")
     refinement: str = Field(description="Rewrite the facts into a full, formal Thai sentence. You MUST echo the subject of the query to form a complete sentence.")
-    numeral_and_entity_check: str = Field(description="Verify that ALL numbers are converted to Arabic numerals. Verify that NO personal names are masked; use the exact names.")
+    entity_check: str = Field(description="Verify that NO personal names are masked; use the exact names.")
     abstractive: str = Field(description="Provide the final formatted answer. Ensure no typos remain.")
     used_refs: List[str] = Field(description="List ONLY the paragraph IDs that were kept in relevance_filter.")
 

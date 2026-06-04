@@ -68,7 +68,7 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
     if HAS_BM25 and all_para_ids:
         bm25, _ = document_store.get_bm25(doc_id)
         if bm25:
-            tokenized_query = str(query).split(" ")
+            tokenized_query = tokenize_thai(str(query))
             raw_bm25_scores = bm25.get_scores(tokenized_query)
             max_bm25 = max(raw_bm25_scores) if len(raw_bm25_scores) > 0 and max(raw_bm25_scores) > 0 else 1
             for idx, p_id in enumerate(all_para_ids):
@@ -146,12 +146,20 @@ async def retriever_node(state: Dict[str, Any]) -> Dict[str, Any]:
     if reranker.ready and eval_groups:
         print(f"[INFO] Using Cross-Encoder Reranker for selection on {len(eval_groups)} groups...")
         scores = reranker.compute_scores(query, eval_groups)
-        best_idx = int(np.argmax(scores))
-        final_refs = eval_refs[best_idx]
-        print(f"✅ Reranker selected Group {best_idx+1} with score {scores[best_idx]:.4f}")
+        
+        # เลือก Top 3 กลุ่ม (หรือทั้งหมดถ้ามีไม่ถึง 3) เพื่อกันหลุด
+        top_k_groups = 3
+        sorted_indices = np.argsort(scores)[::-1][:top_k_groups]
+        
+        merged_refs_set = set()
+        for idx in sorted_indices:
+            merged_refs_set.update(eval_refs[idx])
+            print(f"✅ Reranker selected Group {idx+1} with score {scores[idx]:.4f}")
+            
+        final_refs = sorted(list(merged_refs_set), key=lambda x: int(x[1:]))
     else:
-        print("[WARN] Reranker not ready or no groups -> ลองสุ่มมโน 1 Paragraph ที่คะแนน Vector สูงสุด")
-        final_refs = [p_id for p_id, score in sorted_paras[:1]]
+        print("[WARN] Reranker not ready or no groups -> ลองสุ่มมโน Top 3 Paragraphs ที่คะแนน Vector สูงสุด")
+        final_refs = sorted([p_id for p_id, score in sorted_paras[:3]], key=lambda x: int(x[1:]))
     
     # สร้าง Text Context จาก Ref สุดท้ายที่ชนะ
     selected_lines = []

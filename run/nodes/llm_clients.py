@@ -5,9 +5,7 @@ from typing import Type
 from pydantic import BaseModel
 from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.engine.arg_utils import AsyncEngineArgs
-#from vllm import SamplingParams
 from vllm.sampling_params import SamplingParams, GuidedDecodingParams
-from vllm.lora.request import LoRARequest
 
 class LLMClient:
     def __init__(self):
@@ -15,13 +13,9 @@ class LLMClient:
         try:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             base_model_path = os.path.abspath(os.path.join(current_dir, "../../models/Qwen3-8B")) 
-            self.lora_path = os.path.abspath(os.path.join(current_dir, "../../models_train/final"))
             
             engine_args = AsyncEngineArgs(
                 model=base_model_path,
-                enable_lora=True,
-                max_loras=1,
-                max_lora_rank=64,
                 trust_remote_code=True,
                 max_model_len=32768,
                 tensor_parallel_size=1,
@@ -33,17 +27,19 @@ class LLMClient:
         except Exception as e:
             raise RuntimeError(f"Failed to initialize vLLM Engine: {e}")
 
-    async def agenerate_structured(self, prompt: str, schema: Type[BaseModel], temperature: float = 0.1, use_lora: bool = False) -> BaseModel:
+    async def agenerate_structured(self, prompt: str, schema: Type[BaseModel], temperature: float = 0.1) -> BaseModel:
         schema_json = schema.model_json_schema()
         
         # เปิดใช้งาน guided_json บังคับโครงสร้าง
         sampling_params = SamplingParams(
-            temperature=0.1, # กลับมาใช้ 0.1 ให้ตอบนิ่งที่สุด
+            temperature=0.3,          # 🌟 ปรับขึ้นจาก 0.1 เป็น 0.3 - 0.4
+            top_p=0.85,               # 🌟 เพิ่ม Top-p เพื่อตัด Token หางแถวที่ทำให้หลงทาง
+            top_k=40,
             max_tokens=5120, # ลด Max Tokens เป็น 1024 เพื่อกันปัญหา OOM (Exit 137)
             stop=["<|im_end|>", "<|endoftext|>"], 
-            repetition_penalty=1.0, # ปิด Penalty เพื่อป้องกันไม่ให้โมเดลหยุดพูดเวลาต้อง List คำซ้ำๆ
-            presence_penalty=0.0, # ปิด Penalty
-            frequency_penalty=0.0, # ปิด Penalty
+            repetition_penalty=1.02,  # 🌟 เอาแค่อ่อนๆ พอ (ห้ามเกิน 1.02 เด็ดขาดสำหรับภาษาไทย)
+            presence_penalty=0.00,    # 🌟 เน้นใช้ค่านี้แทน เพื่อสะกิดให้โมเดลเปลี่ยนไปพูดเรื่องใหม่เมื่อจบประโยค
+            frequency_penalty=0.00, # เปิดไว้อ่อนๆ กันลูป
             guided_decoding=GuidedDecodingParams(
                 json=json.dumps(schema_json),
                 backend="xgrammar"
@@ -54,8 +50,7 @@ class LLMClient:
         response_text = ""
         try:
             final_output = None
-            lora_req = LoRARequest("my_lora", 1, self.lora_path) if use_lora else None
-            async for request_output in self.engine.generate(prompt, sampling_params, request_id, lora_request=lora_req):
+            async for request_output in self.engine.generate(prompt, sampling_params, request_id):
                 final_output = request_output
                 
             if not final_output or not final_output.outputs:
@@ -77,21 +72,22 @@ class LLMClient:
                 print(f"[DEBUG] Raw response that caused the error:\n{repr(response_text)}")
             return None
 
-    async def agenerate_text(self, prompt: str, temperature: float = 0.1, use_lora: bool = True) -> str:
+    async def agenerate_text(self, prompt: str, temperature: float = 0.1) -> str:
         sampling_params = SamplingParams(
-            temperature=temperature,
+            temperature=temperature,    # 🌟 ปรับขึ้นจาก 0.1 เป็น 0.3 - 0.4
+            top_p=0.85,               # 🌟 เพิ่ม Top-p เพื่อตัด Token หางแถวที่ทำให้หลงทาง
+            top_k=40,
             max_tokens=1024,
             stop=["<|im_end|>", "<|endoftext|>"], 
-            repetition_penalty=1.0,
-            presence_penalty=0.0,
-            frequency_penalty=0.0
+            repetition_penalty=1.02,  # 🌟 เอาแค่อ่อนๆ พอ (ห้ามเกิน 1.02 เด็ดขาดสำหรับภาษาไทย)
+            presence_penalty=0.00,    # 🌟 เน้นใช้ค่านี้แทน เพื่อสะกิดให้โมเดลเปลี่ยนไปพูดเรื่องใหม่เมื่อจบประโยค
+            frequency_penalty=0.00, # เปิดไว้อ่อนๆ กันลูป
         )
         
         request_id = str(uuid.uuid4())
         try:
             final_output = None
-            lora_req = LoRARequest("my_lora", 1, self.lora_path) if use_lora else None
-            async for request_output in self.engine.generate(prompt, sampling_params, request_id, lora_request=lora_req):
+            async for request_output in self.engine.generate(prompt, sampling_params, request_id):
                 final_output = request_output
                 
             if not final_output or not final_output.outputs:
@@ -101,12 +97,13 @@ class LLMClient:
         except Exception as e:
             print(f"[ERROR] LLM Generation failed: {e}")
             return ""
+
 # --- ใส่ไว้ล่างสุดของไฟล์ llm_clients.py ---
 #_llm_client_instance = None
 
 #def get_llm_client():
- #   global _llm_client_instance
-  #  if _llm_client_instance is None:
-   #     _llm_client_instance = LLMClient()
+ #  global _llm_client_instance
+  # if _llm_client_instance is None:
+   #    _llm_client_instance = LLMClient()
     #return _llm_client_instance
 llm_client=LLMClient()

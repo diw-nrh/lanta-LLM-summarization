@@ -14,7 +14,6 @@ class ValidatorOutput(BaseModel):
     is_valid: bool = Field(description="True if passes all checks, False otherwise")
     route_to: str = Field(description="'retriever', 'generator', or 'none'")
     feedback: str = Field(description="Specific feedback for the target agent if invalid")
-    final_answer: str = Field(description="The polished answer if valid, or best-effort answer if retry limits reached")
 
 async def validator_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- RUNNING AGENT C: VALIDATOR & POLISHER ---")
@@ -56,7 +55,7 @@ YOUR CURRENT TASK (Quality Gate & Polishing):
 [Context Grounding from Agent A]:
 {context}
 
-INSTRUCTION: Evaluate the answer. If it is accurate and complete, polish it and return as final_answer. If it fails, route it back with feedback.
+INSTRUCTION: Evaluate the answer. If it is accurate and complete, simply return is_valid=True. If it fails, route it back with feedback. DO NOT rewrite the answer.
 ==================================================
 """
     try:
@@ -65,7 +64,7 @@ INSTRUCTION: Evaluate the answer. If it is accurate and complete, polish it and 
             is_valid = val_output.is_valid
             route_to = val_output.route_to.lower()
             feedback = val_output.feedback
-            state["abstractive"] = val_output.final_answer
+            # ห้ามขัดเกลาหรือเสยทับข้อความเดิม เพื่อรักษาคะแนน ROUGE-L
         else:
             is_valid = True
             route_to = "none"
