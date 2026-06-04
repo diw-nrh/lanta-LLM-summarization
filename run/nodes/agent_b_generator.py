@@ -10,13 +10,19 @@ def clean_format(text: str) -> str:
     text = re.sub(r'(ครับ|ค่ะ)$', '', text).strip()
     return text
 
-class AgentBOutput(BaseModel):
-    reasoning: str = Field(description="วิเคราะห์สั้นๆ ว่าจะใช้พารากราฟไหนบ้าง")
-    used_refs: List[str] = Field(description="รหัสพารากราฟที่ใช้ เช่น P5, P6")
-    abstractive: str = Field(description="สรุปเนื้อหาจากพารากราฟที่เลือก ตอบกระชับและครบถ้วนตามที่ถามโดยไม่เพิ่มข้อมูลที่ไม่มีในบริบท")
+class GeneratorOutput(BaseModel):
+    analysis: str = Field(description="Analyze the query. Scan the context for the core facts.")
+    relevance_filter: str = Field(description="Briefly list which paragraphs are relevant to the query and which are irrelevant to discard.")
+    pattern_matching: str = Field(description="Identify the query type to select the correct formatting pattern (Entity, Time/Location, List, Summary, or Resolution).")
+    ocr_typo_correction: str = Field(description="Check the relevant text for OCR typos, especially years (e.g., '256ใ' -> '2563', '256O' -> '2560', 'เรับ' -> 'รับ'). Write out the corrected numbers/words.")
+    draft_content: str = Field(description="Extract the facts using the corrected text.")
+    refinement: str = Field(description="Rewrite the facts into a full, formal Thai sentence. You MUST echo the subject of the query to form a complete sentence.")
+    numeral_and_entity_check: str = Field(description="Verify that ALL numbers are converted to Arabic numerals. Verify that NO personal names are masked; use the exact names.")
+    abstractive: str = Field(description="Provide the final formatted answer. Ensure no typos remain.")
+    used_refs: List[str] = Field(description="List ONLY the paragraph IDs that were kept in relevance_filter.")
 
 async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
-    print("--- RUNNING AGENT B: SINGLE-PASS RL ARCHITECTURE (JSON SCHEMA) ---")
+    print("--- RUNNING AGENT B: GENERATOR ---")
     query = state.get("query", "")
     context = state.get("context", "")
     retriever_refs = state.get("refs", [])
@@ -27,62 +33,64 @@ async def generator_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "used_refs": retriever_refs
         }
 
-    # SYSTEM PROMPT FOR RL SINGLE-PASS
-    system_instruction = (
-        "คุณคือผู้ช่วยที่เชี่ยวชาญในการสรุปเนื้อหาจากเอกสาร "
-        "อ่านคำถามและบริบท จากนั้นให้คิดวิเคราะห์แล้วตอบในรูปแบบ JSON object ดังนี้:\n"
-        "{\n"
-        '  "reasoning": "วิเคราะห์ว่าต้องใช้พารากราฟไหน",\n'
-        '  "used_refs": ["P1", "P2"],\n'
-        '  "abstractive": "พิมพ์สรุปเนื้อหาตรงนี้"\n'
-        "}\n"
-        "ตอบกลับเป็น JSON format ที่ถูกต้องเท่านั้น"
-    )
-
-    # Clean the context
-    clean_context_lines = []
-    for line in context.split('\n'):
-        line_clean = re.sub(r'^\[(P\d+)\]:\s*', r'\1: ', line)
-        clean_context_lines.append(line_clean)
-    train_format_context = '\n'.join(clean_context_lines)
-
-    prompt = f"<|im_start|>system\n{system_instruction}<|im_end|>\n<|im_start|>user\nคำถาม: {query}\n\nบริบทจากเอกสาร:\n{train_format_context}<|im_end|>\n<|im_start|>assistant\n"
-    
-    abstractive = ""
-    used_refs = []
-    
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    skill_file_path = os.path.abspath(os.path.join(current_dir, "..", "skills", "skill_generator.md"))
+    system_instruction = ""
     try:
-        print("[INFO] Generating Single-Pass Summary & Used Refs (Using RL-tuned LoRA with JSON Schema)")
-        
-        # ใช้ agenerate_structured เพื่อบังคับให้ได้ JSON Schema ที่ถูกต้อง 100%
-        structured_output = await llm_client.agenerate_structured(prompt, AgentBOutput, use_lora=True)
-        
-        if structured_output:
-            # Process Abstractive
-            extracted_abstractive = getattr(structured_output, 'abstractive', "")
-            thai_to_arabic = str.maketrans('๐๑๒๓๔๕๖๗๘๙', '0123456789')
-            abstractive = str(extracted_abstractive).translate(thai_to_arabic)
-            abstractive = clean_format(abstractive)
-                
-            # Process Refs
-            raw_refs = getattr(structured_output, 'used_refs', []) or []
-            for r in raw_refs:
-                match = re.search(r'\d+', str(r))
-                if match:
-                    used_refs.append(f"P{match.group()}")
-        else:
-            raise ValueError("Structured output is None")
-            
+        with open(skill_file_path, "r", encoding="utf-8") as f:
+            system_instruction = f.read()
     except Exception as e:
-        print(f"[ERROR] Agent B (Single-Pass) Failed: {e}")
-        abstractive = clean_format(re.sub(r'P\d+:\s*', '', train_format_context).replace('\n', ' ').strip())
-        used_refs = retriever_refs
+        system_instruction = "You are an expert Generator."
+        
+    prompt = f"""{system_instruction}
 
-    # Clean duplicate refs and sort
-    used_refs = sorted(list(set(used_refs)), key=lambda x: int(x[1:]))
-    if not used_refs:
-        used_refs = retriever_refs
+==================================================
+YOUR CURRENT TASK:
 
+[Query]: {query}
+
+[Context from Retriever]:
+{context}
+==================================================
+"""
+    try:
+        gen_output = await llm_client.agenerate_structured(prompt, GeneratorOutput)
+        if gen_output:
+            abstractive = gen_output.abstractive
+            
+            def is_invalid(text):
+                if not text: return True
+                return len(str(text).strip(" .-\n\t\r")) == 0
+
+            if is_invalid(abstractive):
+                if not is_invalid(gen_output.refinement):
+                    abstractive = gen_output.refinement
+                elif not is_invalid(gen_output.draft_content):
+                    abstractive = gen_output.draft_content
+                else:
+                    abstractive = re.sub(r'\[P\d+\]:\s*', '', context).replace('\n', ' ').strip()
+            
+            raw_refs = gen_output.used_refs or []
+            used_refs = []
+            # Extract all P\d+ patterns from whatever the LLM returned
+            found_refs = set(re.findall(r'P\d+', str(raw_refs)))
+            used_refs = sorted(list(found_refs), key=lambda x: int(x[1:]))
+                    
+            if not used_refs:
+                used_refs = retriever_refs
+                
+            thai_to_arabic = str.maketrans('๐๑๒๓๔๕๖๗๘๙', '0123456789')
+            abstractive = str(abstractive).translate(thai_to_arabic)
+            abstractive = clean_format(abstractive)
+        else:
+            abstractive = "ไม่พบข้อมูลที่เพียงพอสำหรับสรุปคำตอบ"
+            used_refs = retriever_refs
+        # print("[😍DEBUG] gen_output",gen_output)
+    except Exception as e:
+        print(f"[ERROR] Agent B Failed: {e}")
+        abstractive = "Error during generation."
+        used_refs = []
+        
     return {
         "abstractive": abstractive,
         "used_refs": used_refs
